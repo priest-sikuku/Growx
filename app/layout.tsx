@@ -1,27 +1,28 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { GeistSans } from "geist/font/sans"
-import { GeistMono } from "geist/font/mono"
+import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
+import { MiningProvider } from "@/lib/mining-context"
 import "./globals.css"
-import { Toaster } from "sonner"
+
+const _geist = Geist({ subsets: ["latin"] })
+const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "ZiroX",
-  description: "P2P cryptocurrency trading platform",
+  title: "GrowX — The Coin That Never Sleeps",
+  description: "GrowX (GX) — The Coin That Never Sleeps. Mine every 2 hours. 3% daily growth. P2P trading.",
   generator: "v0.app",
 }
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode
-}) {
+}>) {
   return (
-    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable} antialiased`}>
-      <body>
-        {children}
-        <Toaster position="top-center" richColors />
+    <html lang="en">
+      <body className={`font-sans antialiased bg-gradient-to-b from-[#0f1720] to-[#071124] text-[#e6eef8]`}>
+        <MiningProvider>{children}</MiningProvider>
         <Analytics />
       </body>
     </html>

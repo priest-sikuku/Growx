@@ -1,9 +1,17 @@
-@import 'tailwindcss';
-@import 'tw-animate-css';
+@import "tailwindcss";
+@import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  --green: #00c853;
+  --mid: #0d1b2a;
+  --gold: #ffd700;
+  --bg: #0f1720;
+  --glass: rgba(255, 255, 255, 0.04);
+  --muted: #98a0b3;
+  --radius: 14px;
+
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -75,8 +83,8 @@
 }
 
 @theme inline {
-  --font-sans: 'Geist', 'Geist Fallback';
-  --font-mono: 'Geist Mono', 'Geist Mono Fallback';
+  --font-sans: "Geist", "Geist Fallback";
+  --font-mono: "Geist Mono", "Geist Mono Fallback";
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -122,4 +130,32 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* GrowX custom styles */
+.glass-card {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.02));
+  box-shadow: 0 8px 30px rgba(2, 6, 23, 0.6);
+}
+
+.gradient-text {
+  background: linear-gradient(90deg, #ffd700, #00c853);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.btn-primary-gx {
+  background: linear-gradient(90deg, #00c853, #00b14a);
+  color: #03121b;
+}
+
+.btn-ghost-gx {
+  background: transparent;
+  color: #00c853;
+  border: 1px solid rgba(0, 200, 83, 0.18);
+}
+
+.progress-bar {
+  background: linear-gradient(90deg, #ffd700, #00c853);
 }

@@ -1,155 +1,149 @@
-import { redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import Link from "next/link"
-import { CopyReferralButton } from "@/components/copy-referral-button"
-import { ClaimCoinsCard } from "@/components/claim-coins-card"
-import { ArrowLeftRight, FileText, TrendingUp } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { ZiroxPriceCard } from "@/components/zirox-price-card"
-import { DashboardHeader } from "@/components/dashboard-header"
+"use client"
 
-export default async function DashboardPage() {
-  const supabase = await createClient()
+import { useState } from "react"
+import Header from "@/components/header"
+import Footer from "@/components/footer"
+import { DashboardStats } from "@/components/dashboard-stats"
+import { MiningWidget } from "@/components/mining-widget"
+import { TransactionHistory } from "@/components/transaction-history"
+import { WalletOverview } from "@/components/wallet-overview"
+import { useMining } from "@/lib/mining-context"
+import { Gift } from "lucide-react"
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser()
+export default function Dashboard() {
+  const [isLoggedIn, setIsLoggedIn] = useState(true)
+  const { claimCoins, balance, claimedCoins } = useMining()
+  const [claimAmount, setClaimAmount] = useState("")
+  const [isClaimProcessing, setIsClaimProcessing] = useState(false)
 
-  if (userError || !user) {
-    redirect("/auth/login")
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-gray-400">Please sign in to access your dashboard</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    )
   }
 
-  // Fetch user profile
-  const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single()
+  const handleClaimCoins = () => {
+    if (!claimAmount || Number.parseFloat(claimAmount) <= 0) {
+      alert("Please enter a valid amount")
+      return
+    }
 
-  // Count referrals
-  const { count: referralCount } = await supabase
-    .from("profiles")
-    .select("*", { count: "exact", head: true })
-    .eq("referred_by", user.id)
+    if (Number.parseFloat(claimAmount) > balance) {
+      alert("Insufficient balance")
+      return
+    }
 
-  const { data: globalStats } = await supabase.from("global_stats").select("*").eq("id", 1).single()
-
-  const initials =
-    profile?.full_name
-      ?.split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase() || user.email?.[0].toUpperCase()
+    setIsClaimProcessing(true)
+    claimCoins(Number.parseFloat(claimAmount))
+    setTimeout(() => {
+      setIsClaimProcessing(false)
+      setClaimAmount("")
+    }, 1000)
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background">
-      <DashboardHeader userInitials={initials} userName={profile?.full_name || "User"} userEmail={user.email || ""} />
-
-      {/* Main Content */}
-      <main className="container mx-auto px-4 sm:px-6 py-3 sm:py-4">
-        <div className="mx-auto max-w-4xl space-y-6">
+    <div className="min-h-screen flex flex-col">
+      <Header isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} />
+      <main className="flex-1">
+        <div className="max-w-7xl mx-auto px-6 py-12">
           {/* Welcome Section */}
-          <div className="flex items-center gap-4">
-            <Avatar className="h-16 w-16">
-              <AvatarFallback className="bg-primary text-lg text-primary-foreground">{initials}</AvatarFallback>
-            </Avatar>
-            <div>
-              <h2 className="text-2xl font-bold">Welcome back, {profile?.full_name || "User"}!</h2>
-              <p className="text-muted-foreground">{user.email}</p>
-            </div>
+          <div className="mb-8">
+            <h1 className="text-4xl font-bold mb-2">Welcome back!</h1>
+            <p className="text-gray-400">Your mining dashboard is ready. Keep earning GX every 2 hours.</p>
           </div>
-
-          <ClaimCoinsCard
-            initialCoins={profile?.coins || 0}
-            lastClaimTime={profile?.last_claim_time || null}
-            referralCount={referralCount || 0}
-            globalClaimed={globalStats?.total_claimed || 0}
-            globalMax={globalStats?.max_supply || 200000}
-          />
-
-          <ZiroxPriceCard />
 
           {/* Stats Grid */}
-          <div className="grid gap-6 md:grid-cols-3">
-            <Card className="border-border/50 shadow-lg">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Your Referral Code</CardTitle>
-                <ArrowLeftRight className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="text-3xl font-bold tracking-tight">{profile?.referral_code}</div>
-                  <CopyReferralButton code={profile?.referral_code || ""} />
-                </div>
-                <p className="mt-2 text-xs text-muted-foreground">Share this link to invite friends</p>
-              </CardContent>
-            </Card>
+          <DashboardStats />
 
-            <Card className="border-border/50 shadow-lg">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Referrals</CardTitle>
-                <FileText className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold tracking-tight">{referralCount || 0}</div>
-                <p className="mt-2 text-xs text-muted-foreground">Friends who joined using your link</p>
-              </CardContent>
-            </Card>
+          {/* Main Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
+            {/* Left Column - Mining & Wallet */}
+            <div className="lg:col-span-2 space-y-8">
+              <MiningWidget />
+              <WalletOverview />
 
-            <Card className="border-border/50 shadow-lg">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Referral Earnings</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold tracking-tight">
-                  KES {(profile?.referral_earnings || 0).toFixed(2)}
+              <div className="rounded-3xl p-8" style={{ background: "rgba(255,255,255,0.04)" }}>
+                <div className="flex items-center gap-3 mb-6">
+                  <Gift className="text-yellow-400" size={28} />
+                  <h3 className="text-2xl font-bold">Claim Your Coins</h3>
                 </div>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  10% commission from referral trades + 5% from claims
+
+                <p className="text-gray-400 mb-6">
+                  Lock in your GX coins for 7 days to earn bonus rewards. Claimed coins cannot be traded during the lock
+                  period.
                 </p>
-              </CardContent>
-            </Card>
-          </div>
 
-          {/* Profile Card */}
-          <Card className="border-border/50 shadow-lg">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Profile Information</CardTitle>
-                  <CardDescription>Manage your account details</CardDescription>
+                <div className="space-y-4">
+                  {/* Claim Amount Input */}
+                  <div>
+                    <label className="block text-sm font-semibold mb-2">Amount to Claim (GX)</label>
+                    <input
+                      type="number"
+                      value={claimAmount}
+                      onChange={(e) => setClaimAmount(e.target.value)}
+                      placeholder="Enter amount"
+                      max={balance}
+                      className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-green-500"
+                    />
+                    <div className="text-xs text-gray-400 mt-1">Available: {balance.toFixed(2)} GX</div>
+                  </div>
+
+                  {/* Claim Button */}
+                  <button
+                    onClick={handleClaimCoins}
+                    disabled={isClaimProcessing || !claimAmount}
+                    className="w-full py-3 rounded-lg bg-gradient-to-r from-yellow-500 to-yellow-600 text-black font-semibold hover:shadow-lg hover:shadow-yellow-500/50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isClaimProcessing ? "Claiming..." : "Claim Coins"}
+                  </button>
                 </div>
-                <Button asChild variant="outline">
-                  <Link href="/dashboard/profile">
-                    <FileText className="mr-2 h-4 w-4" />
-                    Edit Profile
-                  </Link>
-                </Button>
+
+                {/* Claimed Coins List */}
+                {claimedCoins.length > 0 && (
+                  <div className="mt-6 pt-6 border-t border-white/10">
+                    <h4 className="font-semibold text-white mb-4">Your Claimed Coins</h4>
+                    <div className="space-y-3">
+                      {claimedCoins.map((claim) => (
+                        <div
+                          key={claim.id}
+                          className="flex justify-between items-center p-3 rounded-lg bg-white/5 border border-white/10"
+                        >
+                          <div>
+                            <div className="font-semibold text-white">{claim.amount} GX</div>
+                            <div className="text-xs text-gray-400">Claimed: {claim.claimedAt}</div>
+                          </div>
+                          <div className="text-right">
+                            <div
+                              className={`text-sm font-semibold ${claim.status === "active" ? "text-green-400" : "text-gray-400"}`}
+                            >
+                              {claim.status === "active" ? "Active" : "Expired"}
+                            </div>
+                            <div className="text-xs text-gray-400">Expires: {claim.expiresAt}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Full Name</p>
-                  <p className="mt-1 text-base">{profile?.full_name || "Not set"}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Email</p>
-                  <p className="mt-1 text-base">{user.email}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Bio</p>
-                  <p className="mt-1 text-base">{profile?.bio || "No bio yet"}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Referred By</p>
-                  <p className="mt-1 text-base">{profile?.referred_by ? "Yes" : "Direct signup"}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+            </div>
+
+            {/* Right Column - History */}
+            <div>
+              <TransactionHistory />
+            </div>
+          </div>
         </div>
       </main>
+      <Footer />
     </div>
   )
 }
