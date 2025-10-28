@@ -26,7 +26,7 @@ export default function Market() {
           .from("listings")
           .select(`
             *,
-            profiles:seller_id (
+            profiles:user_id (
               username,
               rating,
               total_trades

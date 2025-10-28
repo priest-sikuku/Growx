@@ -29,8 +29,13 @@ export default function CreateListing() {
   }
 
   const handleCreateListing = async () => {
-    if (!amount || !price || paymentMethods.length === 0 || !paymentAccount) {
+    if (!amount || !price || paymentMethods.length === 0) {
       alert("Please fill in all required fields")
+      return
+    }
+
+    if (listingType === "sell" && !paymentAccount) {
+      alert("Payment account is required for sell listings")
       return
     }
 
@@ -51,30 +56,24 @@ export default function CreateListing() {
         return
       }
 
-      console.log("[v0] Creating listing with data:", {
-        seller_id: user.id,
+      const listingData: any = {
+        user_id: user.id,
         listing_type: listingType,
         coin_amount: Number.parseFloat(amount),
         price_per_coin: Number.parseFloat(price),
         payment_methods: paymentMethods,
-        terms,
-        payment_account: paymentAccount,
+        terms: terms || null,
         status: "active",
-      })
+      }
 
-      const { data, error } = await supabase
-        .from("listings")
-        .insert({
-          seller_id: user.id,
-          listing_type: listingType,
-          coin_amount: Number.parseFloat(amount),
-          price_per_coin: Number.parseFloat(price),
-          payment_methods: paymentMethods,
-          terms: terms || null,
-          payment_account: paymentAccount,
-          status: "active",
-        })
-        .select()
+      // Only add payment_account for sell listings
+      if (listingType === "sell") {
+        listingData.payment_account = paymentAccount
+      }
+
+      console.log("[v0] Creating listing with data:", listingData)
+
+      const { data, error } = await supabase.from("listings").insert(listingData).select()
 
       if (error) {
         console.error("[v0] Error creating listing:", error)
@@ -99,13 +98,11 @@ export default function CreateListing() {
 
       <main className="flex-1">
         <div className="max-w-2xl mx-auto px-7 py-9">
-          {/* Back Button */}
           <Link href="/market" className="flex items-center gap-2 text-green-400 hover:text-green-300 mb-6">
             <ArrowLeft size={20} />
             Back to Market
           </Link>
 
-          {/* Create Listing Card */}
           <div className="rounded-3xl p-8" style={{ background: "rgba(255,255,255,0.04)" }}>
             <h1 className="text-3xl font-bold mb-2">Create New Listing</h1>
             <p className="text-gray-400 mb-8">Post your GX for sale or create a buy offer</p>
@@ -184,21 +181,23 @@ export default function CreateListing() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold mb-2">
-                  Payment Account Number <span className="text-red-400">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={paymentAccount}
-                  onChange={(e) => setPaymentAccount(e.target.value)}
-                  placeholder="e.g., M-Pesa: 0712345678 or Bank: 1234567890"
-                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-green-500"
-                />
-                <div className="text-xs text-gray-400 mt-1">
-                  Enter your M-Pesa number or bank account number for payments
+              {listingType === "sell" && (
+                <div>
+                  <label className="block text-sm font-semibold mb-2">
+                    Payment Account Number <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={paymentAccount}
+                    onChange={(e) => setPaymentAccount(e.target.value)}
+                    placeholder="e.g., M-Pesa: 0712345678 or Bank: 1234567890"
+                    className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-green-500"
+                  />
+                  <div className="text-xs text-gray-400 mt-1">
+                    Enter your M-Pesa number or bank account where you'll receive payment
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div>
                 <label className="block text-sm font-semibold mb-2">Terms of Trade (Optional)</label>
@@ -223,10 +222,15 @@ export default function CreateListing() {
                 </div>
               )}
 
-              {/* Create Button */}
               <button
                 onClick={handleCreateListing}
-                disabled={isProcessing || !amount || !price || paymentMethods.length === 0 || !paymentAccount}
+                disabled={
+                  isProcessing ||
+                  !amount ||
+                  !price ||
+                  paymentMethods.length === 0 ||
+                  (listingType === "sell" && !paymentAccount)
+                }
                 className="w-full py-3 rounded-lg bg-gradient-to-r from-green-500 to-green-600 text-black font-semibold hover:shadow-lg hover:shadow-green-500/50 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isProcessing ? "Creating..." : "Create Listing"}
