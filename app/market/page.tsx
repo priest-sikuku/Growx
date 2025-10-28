@@ -22,29 +22,54 @@ export default function Market() {
       try {
         console.log("[v0] Fetching listings for tab:", activeTab)
 
-        const { data, error } = await supabase
-          .from("listings")
-          .select(`
-            *,
-            profiles:user_id (
-              username,
-              rating,
-              total_trades
-            )
-          `)
-          .eq("status", "active")
-          .eq("listing_type", activeTab === "buy" ? "sell" : "buy") // If user wants to buy, show sell listings
-          .order("price_per_coin", { ascending: activeTab === "buy" }) // lowest to high for buy, high to low for sell
+        // When user clicks "Buy GX", they want to see people selling GX (listing_type = 'sell')
+        // When user clicks "Sell GX", they want to see people buying GX (listing_type = 'buy')
+        const listingTypeToFetch = activeTab === "buy" ? "sell" : "buy"
 
-        if (error) {
-          console.error("[v0] Error fetching listings:", error)
-          throw error
+        console.log("[v0] Fetching listing_type:", listingTypeToFetch)
+
+        const { data: listingsData, error: listingsError } = await supabase
+          .from("listings")
+          .select("*")
+          .eq("status", "active")
+          .eq("listing_type", listingTypeToFetch)
+          .order("price_per_coin", { ascending: activeTab === "buy" })
+
+        if (listingsError) {
+          console.error("[v0] Error fetching listings:", listingsError)
+          throw listingsError
         }
 
-        console.log("[v0] Fetched listings:", data)
-        setListings(data || [])
+        console.log("[v0] Fetched listings data:", listingsData)
+
+        if (listingsData && listingsData.length > 0) {
+          const userIds = listingsData.map((l) => l.user_id)
+          const { data: profilesData, error: profilesError } = await supabase
+            .from("profiles")
+            .select("id, username, rating, total_trades")
+            .in("id", userIds)
+
+          if (profilesError) {
+            console.error("[v0] Error fetching profiles:", profilesError)
+          }
+
+          console.log("[v0] Fetched profiles data:", profilesData)
+
+          const listingsWithProfiles = listingsData.map((listing) => {
+            const profile = profilesData?.find((p) => p.id === listing.user_id)
+            return {
+              ...listing,
+              profile: profile || { username: "Anonymous", rating: 0, total_trades: 0 },
+            }
+          })
+
+          console.log("[v0] Merged listings with profiles:", listingsWithProfiles)
+          setListings(listingsWithProfiles)
+        } else {
+          setListings([])
+        }
       } catch (error) {
-        console.error("[v0] Error fetching listings:", error)
+        console.error("[v0] Error in fetchListings:", error)
         setListings([])
       } finally {
         setLoading(false)
@@ -52,6 +77,26 @@ export default function Market() {
     }
 
     fetchListings()
+
+    const channel = supabase
+      .channel("listings-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "listings",
+        },
+        (payload) => {
+          console.log("[v0] Listing changed:", payload)
+          fetchListings() // Refetch when listings change
+        },
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [activeTab, supabase])
 
   return (
@@ -106,9 +151,17 @@ export default function Market() {
               <div className="text-gray-400">Loading listings...</div>
             </div>
           ) : listings.length === 0 ? (
-            <div className="mt-6 text-center py-12">
-              <div className="text-gray-400 mb-4">No {activeTab === "buy" ? "sell" : "buy"} listings available</div>
+            <div className="mt-6 text-center py-12 rounded-3xl" style={{ background: "rgba(255,255,255,0.04)" }}>
+              <div className="text-gray-400 mb-4">
+                No {activeTab === "buy" ? "sellers" : "buyers"} available right now
+              </div>
               <p className="text-sm text-gray-500">Be the first to create a listing!</p>
+              <Link
+                href="/market/create-listing"
+                className="inline-block mt-4 px-6 py-2 rounded-3xl bg-gradient-to-r from-green-500 to-green-600 text-black font-semibold text-sm hover:shadow-lg hover:shadow-green-500/50 transition"
+              >
+                Create Listing
+              </Link>
             </div>
           ) : (
             <div className="mt-6 flex flex-col gap-3">
@@ -122,10 +175,10 @@ export default function Market() {
                   {/* Trader Info */}
                   <div className="flex flex-col flex-1">
                     <div className="font-semibold text-white group-hover:text-green-400 transition">
-                      {listing.profiles?.username || "Anonymous"}
+                      {listing.profile?.username || "Anonymous"}
                     </div>
                     <div className="text-yellow-400 text-sm">
-                      ⭐ {listing.profiles?.rating?.toFixed(1) || "0.0"} ({listing.profiles?.total_trades || 0} trades)
+                      ⭐ {listing.profile?.rating?.toFixed(1) || "0.0"} ({listing.profile?.total_trades || 0} trades)
                     </div>
                   </div>
 
