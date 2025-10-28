@@ -52,7 +52,7 @@ export default function CreateListing() {
       }
 
       console.log("[v0] Creating listing with data:", {
-        user_id: user.id,
+        seller_id: user.id,
         listing_type: listingType,
         coin_amount: Number.parseFloat(amount),
         price_per_coin: Number.parseFloat(price),
@@ -65,7 +65,7 @@ export default function CreateListing() {
       const { data, error } = await supabase
         .from("listings")
         .insert({
-          user_id: user.id,
+          seller_id: user.id,
           listing_type: listingType,
           coin_amount: Number.parseFloat(amount),
           price_per_coin: Number.parseFloat(price),
@@ -78,15 +78,16 @@ export default function CreateListing() {
 
       if (error) {
         console.error("[v0] Error creating listing:", error)
+        alert(`Failed to create listing: ${error.message}`)
         throw error
       }
 
       console.log("[v0] Listing created successfully:", data)
       alert("Listing created successfully!")
       router.push("/market")
-    } catch (error) {
+    } catch (error: any) {
       console.error("[v0] Error creating listing:", error)
-      alert("Failed to create listing. Please try again.")
+      alert(`Failed to create listing: ${error?.message || "Please try again."}`)
     } finally {
       setIsProcessing(false)
     }
