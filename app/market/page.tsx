@@ -32,7 +32,7 @@ export default function Market() {
           `)
           .eq("status", "active")
           .eq("listing_type", activeTab === "buy" ? "sell" : "buy")
-          .order("created_at", { ascending: false })
+          .order("price_per_coin", { ascending: activeTab === "buy" }) // lowest to high for buy, high to low for sell
 
         if (error) throw error
         setListings(data || [])
@@ -86,6 +86,12 @@ export default function Market() {
             >
               Sell GX
             </button>
+            <Link
+              href="/market/my-orders"
+              className="px-4 py-2 rounded-3xl font-semibold text-sm transition bg-transparent text-green-400 border border-green-500/30 hover:bg-green-500/10"
+            >
+              My Orders
+            </Link>
           </div>
 
           {loading ? (

@@ -1,19 +1,19 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useRouter, useParams } from "next/navigation"
 import Link from "next/link"
 import Header from "@/components/header"
 import Footer from "@/components/footer"
-import { useMining } from "@/lib/mining-context"
 import { ArrowLeft } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 
-export default function CreateListing() {
+export default function EditListing() {
   const router = useRouter()
-  const { balance } = useMining()
+  const params = useParams()
+  const listingId = params.id as string
   const [isLoggedIn, setIsLoggedIn] = useState(true)
-  const [listingType, setListingType] = useState<"buy" | "sell">("sell")
+  const [loading, setLoading] = useState(true)
   const [amount, setAmount] = useState("")
   const [price, setPrice] = useState("")
   const [paymentMethods, setPaymentMethods] = useState<string[]>([])
@@ -22,51 +22,73 @@ export default function CreateListing() {
 
   const availablePaymentMethods = ["M-Pesa", "Bank Transfer", "Airtel Money"]
 
+  useEffect(() => {
+    fetchListing()
+  }, [])
+
+  const fetchListing = async () => {
+    try {
+      const { data, error } = await supabase.from("listings").select("*").eq("id", listingId).single()
+
+      if (error) throw error
+      if (data) {
+        setAmount(data.coin_amount.toString())
+        setPrice(data.price_per_coin.toString())
+        setPaymentMethods(data.payment_methods || [])
+      }
+    } catch (error) {
+      console.error("[v0] Error fetching listing:", error)
+      alert("Failed to load listing")
+      router.push("/market/my-orders")
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const togglePaymentMethod = (method: string) => {
     setPaymentMethods((prev) => (prev.includes(method) ? prev.filter((m) => m !== method) : [...prev, method]))
   }
 
-  const handleCreateListing = async () => {
+  const handleUpdateListing = async () => {
     if (!amount || !price || paymentMethods.length === 0) {
       alert("Please fill in all fields")
-      return
-    }
-
-    if (listingType === "sell" && Number.parseFloat(amount) > balance) {
-      alert("Insufficient balance to create sell listing")
       return
     }
 
     setIsProcessing(true)
 
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) {
-        alert("Please sign in to create a listing")
-        return
-      }
-
-      const { error } = await supabase.from("listings").insert({
-        user_id: user.id,
-        listing_type: listingType,
-        coin_amount: Number.parseFloat(amount),
-        price_per_coin: Number.parseFloat(price),
-        payment_methods: paymentMethods,
-        status: "active",
-      })
+      const { error } = await supabase
+        .from("listings")
+        .update({
+          coin_amount: Number.parseFloat(amount),
+          price_per_coin: Number.parseFloat(price),
+          payment_methods: paymentMethods,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", listingId)
 
       if (error) throw error
 
-      alert("Listing created successfully!")
-      router.push("/market")
+      alert("Listing updated successfully")
+      router.push("/market/my-orders")
     } catch (error) {
-      console.error("[v0] Error creating listing:", error)
-      alert("Failed to create listing")
+      console.error("[v0] Error updating listing:", error)
+      alert("Failed to update listing")
     } finally {
       setIsProcessing(false)
     }
+  }
+
+  if (loading) {
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: "linear-gradient(180deg, #0f1720, #071124)" }}
+      >
+        <div className="text-gray-400">Loading...</div>
+      </div>
+    )
   }
 
   return (
@@ -75,47 +97,16 @@ export default function CreateListing() {
 
       <main className="flex-1">
         <div className="max-w-2xl mx-auto px-7 py-9">
-          {/* Back Button */}
-          <Link href="/market" className="flex items-center gap-2 text-green-400 hover:text-green-300 mb-6">
+          <Link href="/market/my-orders" className="flex items-center gap-2 text-green-400 hover:text-green-300 mb-6">
             <ArrowLeft size={20} />
-            Back to Market
+            Back to My Orders
           </Link>
 
-          {/* Create Listing Card */}
           <div className="rounded-3xl p-8" style={{ background: "rgba(255,255,255,0.04)" }}>
-            <h1 className="text-3xl font-bold mb-2">Create New Listing</h1>
-            <p className="text-gray-400 mb-8">Post your GX for sale or create a buy offer</p>
+            <h1 className="text-3xl font-bold mb-2">Edit Listing</h1>
+            <p className="text-gray-400 mb-8">Update your listing details</p>
 
-            {/* Listing Type */}
-            <div className="mb-8">
-              <label className="block text-sm font-semibold mb-3">Listing Type</label>
-              <div className="flex gap-4">
-                <button
-                  onClick={() => setListingType("sell")}
-                  className={`flex-1 py-3 rounded-lg font-semibold transition ${
-                    listingType === "sell"
-                      ? "bg-gradient-to-r from-green-500 to-green-600 text-black"
-                      : "bg-white/5 border border-white/10 text-white hover:bg-white/10"
-                  }`}
-                >
-                  Sell GX
-                </button>
-                <button
-                  onClick={() => setListingType("buy")}
-                  className={`flex-1 py-3 rounded-lg font-semibold transition ${
-                    listingType === "buy"
-                      ? "bg-gradient-to-r from-green-500 to-green-600 text-black"
-                      : "bg-white/5 border border-white/10 text-white hover:bg-white/10"
-                  }`}
-                >
-                  Buy GX
-                </button>
-              </div>
-            </div>
-
-            {/* Form Fields */}
             <div className="space-y-6">
-              {/* Amount */}
               <div>
                 <label className="block text-sm font-semibold mb-2">Amount (GX)</label>
                 <input
@@ -125,12 +116,8 @@ export default function CreateListing() {
                   placeholder="Enter amount"
                   className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-green-500"
                 />
-                {listingType === "sell" && (
-                  <div className="text-xs text-gray-400 mt-1">Your balance: {balance.toFixed(2)} GX</div>
-                )}
               </div>
 
-              {/* Price per GX */}
               <div>
                 <label className="block text-sm font-semibold mb-2">Price per GX (KES)</label>
                 <input
@@ -142,7 +129,6 @@ export default function CreateListing() {
                 />
               </div>
 
-              {/* Payment Methods */}
               <div>
                 <label className="block text-sm font-semibold mb-3">Accepted Payment Methods</label>
                 <div className="space-y-2">
@@ -160,7 +146,6 @@ export default function CreateListing() {
                 </div>
               </div>
 
-              {/* Total Summary */}
               {amount && price && (
                 <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/30">
                   <div className="flex justify-between items-center">
@@ -172,13 +157,12 @@ export default function CreateListing() {
                 </div>
               )}
 
-              {/* Create Button */}
               <button
-                onClick={handleCreateListing}
+                onClick={handleUpdateListing}
                 disabled={isProcessing || !amount || !price || paymentMethods.length === 0}
                 className="w-full py-3 rounded-lg bg-gradient-to-r from-green-500 to-green-600 text-black font-semibold hover:shadow-lg hover:shadow-green-500/50 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isProcessing ? "Creating..." : "Create Listing"}
+                {isProcessing ? "Updating..." : "Update Listing"}
               </button>
             </div>
           </div>
