@@ -66,22 +66,18 @@ const MiningContext = createContext<MiningContextType | undefined>(undefined)
 
 export function MiningProvider({ children }: { children: React.ReactNode }) {
   const supabase = createClient()
-  const [balance, setBalance] = useState(1234.56)
-  const [totalMined, setTotalMined] = useState(5432.1)
-  const [miningStreak, setMiningStreak] = useState(12)
-  const [nextMineTime, setNextMineTime] = useState(2880)
+  const [balance, setBalance] = useState(0.0)
+  const [totalMined, setTotalMined] = useState(0.0)
+  const [miningStreak, setMiningStreak] = useState(0)
+  const [nextMineTime, setNextMineTime] = useState(7200)
   const [isMining, setIsMining] = useState(false)
   const [pendingReward, setPendingReward] = useState(0)
-  const [userRating, setUserRating] = useState(4.8)
-  const [userTrades, setUserTrades] = useState(45)
+  const [userRating, setUserRating] = useState(0.0)
+  const [userTrades, setUserTrades] = useState(0)
   const [userId, setUserId] = useState<string | null>(null)
   const [activeTrades, setActiveTrades] = useState<Trade[]>([])
   const [claimedCoins, setClaimedCoins] = useState<ClaimedCoin[]>([])
-  const [transactions, setTransactions] = useState<Transaction[]>([
-    { id: 1, type: "mine", amount: 45.23, time: "2 hours ago", status: "completed" },
-    { id: 2, type: "trade", amount: -100, time: "5 hours ago", status: "completed" },
-    { id: 3, type: "mine", amount: 52.1, time: "1 day ago", status: "completed" },
-  ])
+  const [transactions, setTransactions] = useState<Transaction[]>([])
 
   useEffect(() => {
     const initializeUser = async () => {
@@ -127,21 +123,51 @@ export function MiningProvider({ children }: { children: React.ReactNode }) {
 
       const { data: ratings } = await supabase.from("ratings").select("rating").eq("rated_user_id", uid)
 
-      if (coins) {
+      const { data: transactionsData } = await supabase
+        .from("transactions")
+        .select("*")
+        .eq("user_id", uid)
+        .order("created_at", { ascending: false })
+        .limit(10)
+
+      if (coins && coins.length > 0) {
         const total = coins.reduce((sum, coin) => sum + Number(coin.amount), 0)
         setBalance(total)
+      } else {
+        setBalance(0.0)
       }
 
-      if (trades) {
+      if (trades && trades.length > 0) {
         setUserTrades(trades.length)
+      } else {
+        setUserTrades(0)
       }
 
       if (ratings && ratings.length > 0) {
         const avg = ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length
-        setUserRating(avg)
+        setUserRating(Number(avg.toFixed(2)))
+      } else {
+        setUserRating(0.0)
+      }
+
+      if (transactionsData && transactionsData.length > 0) {
+        const formattedTransactions = transactionsData.map((tx, index) => ({
+          id: index + 1,
+          type: tx.type as "mine" | "trade" | "buy" | "sell" | "claim",
+          amount: Number(tx.amount),
+          time: new Date(tx.created_at).toLocaleString(),
+          status: tx.status as "completed" | "pending",
+        }))
+        setTransactions(formattedTransactions)
+      } else {
+        setTransactions([])
       }
     } catch (error) {
       console.error("[v0] Error loading user data:", error)
+      setBalance(0.0)
+      setUserRating(0.0)
+      setUserTrades(0)
+      setTransactions([])
     }
   }, [])
 

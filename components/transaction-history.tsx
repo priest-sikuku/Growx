@@ -53,33 +53,42 @@ export function TransactionHistory() {
     <div className="glass-card p-6 rounded-2xl border border-white/5">
       <h3 className="text-xl font-bold mb-6">Recent Activity</h3>
 
-      <div className="space-y-4">
-        {transactions.slice(0, 5).map((tx) => (
-          <div
-            key={tx.id}
-            className="flex items-center justify-between p-4 bg-white/5 rounded-lg hover:bg-white/10 transition"
-          >
-            <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-lg ${getBackgroundColor(tx.type)}`}>{getIcon(tx.type)}</div>
-              <div>
-                <p className="text-sm font-semibold">{getLabel(tx.type)}</p>
-                <p className="text-xs text-gray-400">{tx.time}</p>
+      {transactions.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="text-gray-400 mb-2">No transactions yet</div>
+          <p className="text-sm text-gray-500">Start mining to see your activity here</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {transactions.slice(0, 5).map((tx) => (
+            <div
+              key={tx.id}
+              className="flex items-center justify-between p-4 bg-white/5 rounded-lg hover:bg-white/10 transition"
+            >
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-lg ${getBackgroundColor(tx.type)}`}>{getIcon(tx.type)}</div>
+                <div>
+                  <p className="text-sm font-semibold">{getLabel(tx.type)}</p>
+                  <p className="text-xs text-gray-400">{tx.time}</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className={`font-bold ${tx.amount > 0 ? "text-green-400" : "text-red-400"}`}>
+                  {tx.amount > 0 ? "+" : ""}
+                  {tx.amount.toFixed(2)}
+                </p>
+                <p className="text-xs text-gray-400 capitalize">{tx.status}</p>
               </div>
             </div>
-            <div className="text-right">
-              <p className={`font-bold ${tx.amount > 0 ? "text-green-400" : "text-red-400"}`}>
-                {tx.amount > 0 ? "+" : ""}
-                {tx.amount.toFixed(2)}
-              </p>
-              <p className="text-xs text-gray-400 capitalize">{tx.status}</p>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
-      <button className="w-full mt-6 px-4 py-2 rounded-lg border border-green-500/30 text-green-400 hover:bg-green-500/10 transition text-sm font-semibold">
-        View All Transactions
-      </button>
+      {transactions.length > 0 && (
+        <button className="w-full mt-6 px-4 py-2 rounded-lg border border-green-500/30 text-green-400 hover:bg-green-500/10 transition text-sm font-semibold">
+          View All Transactions
+        </button>
+      )}
     </div>
   )
 }

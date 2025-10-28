@@ -28,7 +28,7 @@ export function BalancePanel() {
         <div className="grid grid-cols-2 gap-4 mb-6">
           <div>
             <div className="text-xs text-gray-400 mb-1">Your Balance</div>
-            <div className="text-2xl font-bold text-white">{balance.toFixed(2)} GX</div>
+            <div className="text-2xl font-bold text-white">{balance ? balance.toFixed(2) : "0.00"} GX</div>
           </div>
           <div className="text-right">
             <div className="text-xs text-gray-400 mb-1">Daily Growth</div>
@@ -62,11 +62,11 @@ export function BalancePanel() {
         <div className="space-y-3">
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-400">Rating</span>
-            <span className="font-semibold text-yellow-400">⭐ {userRating}</span>
+            <span className="font-semibold text-yellow-400">⭐ {userRating ? userRating.toFixed(2) : "0.00"}</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-400">Trades</span>
-            <span className="font-semibold text-green-400">{userTrades}</span>
+            <span className="font-semibold text-green-400">{userTrades ? userTrades : "0"}</span>
           </div>
         </div>
       </div>

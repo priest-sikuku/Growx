@@ -1,101 +1,51 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import Header from "@/components/header"
 import Footer from "@/components/footer"
 import { useMining } from "@/lib/mining-context"
 import { ChevronRight } from "lucide-react"
+import { createClient } from "@/lib/supabase/client"
 
 export default function Market() {
   const [isLoggedIn, setIsLoggedIn] = useState(true)
   const [activeTab, setActiveTab] = useState<"buy" | "sell">("buy")
-  const [selectedTrade, setSelectedTrade] = useState<string | null>(null)
-  const { activeTrades, createTrade } = useMining()
+  const { activeTrades } = useMining()
+  const [listings, setListings] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const supabase = createClient()
 
-  const buyListings = [
-    {
-      id: "seller-1",
-      name: "CryptoKing",
-      rating: 4.9,
-      trades: 128,
-      price: 125.0,
-      paymentMethods: ["M-Pesa", "Bank Transfer"],
-      available: 500,
-    },
-    {
-      id: "seller-2",
-      name: "TraderJane",
-      rating: 4.7,
-      trades: 93,
-      price: 123.5,
-      paymentMethods: ["M-Pesa"],
-      available: 250,
-    },
-    {
-      id: "seller-3",
-      name: "SmartP2P",
-      rating: 5.0,
-      trades: 220,
-      price: 126.0,
-      paymentMethods: ["Airtel Money", "M-Pesa"],
-      available: 1000,
-    },
-    {
-      id: "seller-4",
-      name: "FastTrader",
-      rating: 4.8,
-      trades: 156,
-      price: 124.5,
-      paymentMethods: ["M-Pesa"],
-      available: 350,
-    },
-    {
-      id: "seller-5",
-      name: "SecureExchange",
-      rating: 4.6,
-      trades: 89,
-      price: 122.0,
-      paymentMethods: ["Bank Transfer"],
-      available: 600,
-    },
-  ]
+  useEffect(() => {
+    const fetchListings = async () => {
+      setLoading(true)
+      try {
+        const { data, error } = await supabase
+          .from("listings")
+          .select(`
+            *,
+            profiles:user_id (
+              username,
+              rating,
+              total_trades
+            )
+          `)
+          .eq("status", "active")
+          .eq("listing_type", activeTab === "buy" ? "sell" : "buy")
+          .order("created_at", { ascending: false })
 
-  const sellListings = [
-    {
-      id: "buyer-1",
-      name: "BuyerPro",
-      rating: 4.9,
-      trades: 145,
-      price: 124.0,
-      paymentMethods: ["M-Pesa", "Bank Transfer"],
-      available: 800,
-    },
-    {
-      id: "buyer-2",
-      name: "GXCollector",
-      rating: 4.7,
-      trades: 78,
-      price: 122.5,
-      paymentMethods: ["M-Pesa"],
-      available: 400,
-    },
-    {
-      id: "buyer-3",
-      name: "TrustTrade",
-      rating: 5.0,
-      trades: 203,
-      price: 125.5,
-      paymentMethods: ["Bank Transfer", "Airtel Money"],
-      available: 1200,
-    },
-  ]
+        if (error) throw error
+        setListings(data || [])
+      } catch (error) {
+        console.error("[v0] Error fetching listings:", error)
+        setListings([])
+      } finally {
+        setLoading(false)
+      }
+    }
 
-  const currentListings = activeTab === "buy" ? buyListings : sellListings
-
-  const handleTradeClick = (listing: any) => {
-    setSelectedTrade(listing.id)
-  }
+    fetchListings()
+  }, [activeTab])
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "linear-gradient(180deg, #0f1720, #071124)" }}>
@@ -138,43 +88,55 @@ export default function Market() {
             </button>
           </div>
 
-          {/* Trade Listings */}
-          <div className="mt-6 flex flex-col gap-3">
-            {currentListings.map((listing) => (
-              <Link
-                key={listing.id}
-                href={`/market/trade/${listing.id}?type=${activeTab}`}
-                className="flex justify-between items-center p-4 rounded-3xl transition hover:bg-white/10 cursor-pointer group"
-                style={{ background: "rgba(255,255,255,0.04)" }}
-              >
-                {/* Trader Info */}
-                <div className="flex flex-col flex-1">
-                  <div className="font-semibold text-white group-hover:text-green-400 transition">{listing.name}</div>
-                  <div className="text-yellow-400 text-sm">
-                    ⭐ {listing.rating} ({listing.trades} trades)
+          {loading ? (
+            <div className="mt-6 text-center py-12">
+              <div className="text-gray-400">Loading listings...</div>
+            </div>
+          ) : listings.length === 0 ? (
+            <div className="mt-6 text-center py-12">
+              <div className="text-gray-400 mb-4">No {activeTab === "buy" ? "sell" : "buy"} listings available</div>
+              <p className="text-sm text-gray-500">Be the first to create a listing!</p>
+            </div>
+          ) : (
+            <div className="mt-6 flex flex-col gap-3">
+              {listings.map((listing) => (
+                <Link
+                  key={listing.id}
+                  href={`/market/trade/${listing.id}?type=${activeTab}`}
+                  className="flex justify-between items-center p-4 rounded-3xl transition hover:bg-white/10 cursor-pointer group"
+                  style={{ background: "rgba(255,255,255,0.04)" }}
+                >
+                  {/* Trader Info */}
+                  <div className="flex flex-col flex-1">
+                    <div className="font-semibold text-white group-hover:text-green-400 transition">
+                      {listing.profiles?.username || "Anonymous"}
+                    </div>
+                    <div className="text-yellow-400 text-sm">
+                      ⭐ {listing.profiles?.rating?.toFixed(1) || "0.0"} ({listing.profiles?.total_trades || 0} trades)
+                    </div>
                   </div>
-                </div>
 
-                {/* Price & Payment */}
-                <div className="text-right flex-1">
-                  <div className="font-bold text-green-400">KES {listing.price.toFixed(2)} / GX</div>
-                  <div className="text-gray-400 text-xs">{listing.paymentMethods.join(" | ")}</div>
-                </div>
-
-                {/* Available & Action */}
-                <div className="flex items-center gap-4 ml-4">
-                  <div className="text-right">
-                    <div className="text-xs text-gray-400">Available</div>
-                    <div className="font-semibold text-green-400">{listing.available} GX</div>
+                  {/* Price & Payment */}
+                  <div className="text-right flex-1">
+                    <div className="font-bold text-green-400">KES {Number(listing.price_per_coin).toFixed(2)} / GX</div>
+                    <div className="text-gray-400 text-xs">{listing.payment_methods?.join(" | ") || "M-Pesa"}</div>
                   </div>
-                  <button className="px-4 py-2 rounded-3xl bg-gradient-to-r from-green-500 to-green-600 text-black font-semibold text-sm hover:shadow-lg hover:shadow-green-500/50 transition flex items-center gap-2">
-                    {activeTab === "buy" ? "Buy" : "Sell"}
-                    <ChevronRight size={16} />
-                  </button>
-                </div>
-              </Link>
-            ))}
-          </div>
+
+                  {/* Available & Action */}
+                  <div className="flex items-center gap-4 ml-4">
+                    <div className="text-right">
+                      <div className="text-xs text-gray-400">Available</div>
+                      <div className="font-semibold text-green-400">{listing.coin_amount} GX</div>
+                    </div>
+                    <button className="px-4 py-2 rounded-3xl bg-gradient-to-r from-green-500 to-green-600 text-black font-semibold text-sm hover:shadow-lg hover:shadow-green-500/50 transition flex items-center gap-2">
+                      {activeTab === "buy" ? "Buy" : "Sell"}
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
 
           {/* Active Trades Section */}
           {activeTrades.length > 0 && (
