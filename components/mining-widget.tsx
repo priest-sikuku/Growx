@@ -15,13 +15,16 @@ export function MiningWidget() {
     return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`
   }
 
-  const progressPercent = ((7200 - nextMineTime) / 7200) * 100
+  const progressPercent = nextMineTime > 0 ? ((7200 - nextMineTime) / 7200) * 100 : 100
 
   const handleMine = () => {
+    console.log("[v0] Mine button clicked")
     mine()
     setShowReward(true)
     setTimeout(() => setShowReward(false), 3000)
   }
+
+  const canMine = nextMineTime === 0 && !isMining
 
   return (
     <div className="glass-card p-8 rounded-2xl border border-white/5">
@@ -35,7 +38,7 @@ export function MiningWidget() {
       {/* Mining Status */}
       <div className="mb-8">
         <div className="flex justify-between items-center mb-4">
-          <span className="text-gray-400">Next mine available in</span>
+          <span className="text-gray-400">{nextMineTime === 0 ? "Ready to mine!" : "Next mine available in"}</span>
           <span className="text-2xl font-bold text-green-400">{formatTime(nextMineTime)}</span>
         </div>
 
@@ -61,10 +64,10 @@ export function MiningWidget() {
       {/* Mine Button */}
       <button
         onClick={handleMine}
-        disabled={isMining || nextMineTime > 0}
+        disabled={!canMine}
         className="w-full px-6 py-4 rounded-lg btn-primary-gx font-bold text-lg hover:shadow-lg hover:shadow-green-500/50 transition disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {isMining ? "Mining..." : nextMineTime > 0 ? "Mining in Progress" : "Mine Now"}
+        {isMining ? "Mining..." : canMine ? "Mine Now" : `Wait ${formatTime(nextMineTime)}`}
       </button>
 
       {/* Info */}
