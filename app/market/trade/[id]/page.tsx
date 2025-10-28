@@ -34,9 +34,10 @@ export default function TradePage({ params }: { params: { id: string } }) {
       const {
         data: { user },
       } = await supabase.auth.getUser()
+
       if (user) {
         setIsLoggedIn(true)
-        const { data: profile } = await supabase.from("profiles").select("*").eq("user_id", user.id).single()
+        const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single()
         setCurrentUser(profile)
       }
 
@@ -46,17 +47,34 @@ export default function TradePage({ params }: { params: { id: string } }) {
         .eq("id", params.id)
         .single()
 
-      if (listingError) throw listingError
+      if (listingError) {
+        console.error("[v0] Listing error:", listingError)
+        throw listingError
+      }
+
+      if (!listingData) {
+        console.error("[v0] No listing found")
+        setLoading(false)
+        return
+      }
 
       setListing(listingData)
 
       const { data: sellerData, error: sellerError } = await supabase
         .from("profiles")
         .select("*")
-        .eq("user_id", listingData.user_id)
+        .eq("id", listingData.user_id)
         .single()
 
-      if (sellerError) throw sellerError
+      if (sellerError) {
+        console.error("[v0] Seller error:", sellerError)
+        throw sellerError
+      }
+
+      if (!sellerData) {
+        console.error("[v0] No seller found for user_id:", listingData.user_id)
+      }
+
       setSeller(sellerData)
     } catch (error) {
       console.error("[v0] Error fetching listing:", error)
@@ -83,12 +101,34 @@ export default function TradePage({ params }: { params: { id: string } }) {
     )
   }
 
-  if (!listing || !seller) {
+  if (!listing) {
     return (
       <div className="min-h-screen flex flex-col">
         <Header isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} />
         <main className="flex-1 flex items-center justify-center">
-          <p className="text-gray-400">Listing not found</p>
+          <div className="text-center">
+            <p className="text-gray-400 mb-4">Listing not found</p>
+            <Link href="/market" className="text-green-400 hover:text-green-300">
+              Back to Market
+            </Link>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    )
+  }
+
+  if (!seller) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-gray-400 mb-4">Seller not found</p>
+            <Link href="/market" className="text-green-400 hover:text-green-300">
+              Back to Market
+            </Link>
+          </div>
         </main>
         <Footer />
       </div>
@@ -123,8 +163,8 @@ export default function TradePage({ params }: { params: { id: string } }) {
         .from("trades")
         .insert({
           listing_id: listing.id,
-          buyer_id: currentUser.user_id,
-          seller_id: listing.user_id,
+          buyer_id: currentUser.buyer_id,
+          seller_id: seller.seller_id,
           coin_amount: coinAmount,
           total_price: totalPrice,
           payment_method: paymentMethod,
@@ -138,7 +178,7 @@ export default function TradePage({ params }: { params: { id: string } }) {
 
       const { error: escrowError } = await supabase.rpc("move_coins_to_escrow", {
         p_trade_id: trade.id,
-        p_seller_id: listing.user_id,
+        p_seller_id: seller.seller_id,
         p_amount: coinAmount,
       })
 
