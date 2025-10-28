@@ -20,6 +20,8 @@ export default function Market() {
     const fetchListings = async () => {
       setLoading(true)
       try {
+        console.log("[v0] Fetching listings for tab:", activeTab)
+
         const { data, error } = await supabase
           .from("listings")
           .select(`
@@ -31,10 +33,15 @@ export default function Market() {
             )
           `)
           .eq("status", "active")
-          .eq("listing_type", activeTab === "buy" ? "sell" : "buy")
+          .eq("listing_type", activeTab === "buy" ? "sell" : "buy") // If user wants to buy, show sell listings
           .order("price_per_coin", { ascending: activeTab === "buy" }) // lowest to high for buy, high to low for sell
 
-        if (error) throw error
+        if (error) {
+          console.error("[v0] Error fetching listings:", error)
+          throw error
+        }
+
+        console.log("[v0] Fetched listings:", data)
         setListings(data || [])
       } catch (error) {
         console.error("[v0] Error fetching listings:", error)
@@ -45,7 +52,7 @@ export default function Market() {
     }
 
     fetchListings()
-  }, [activeTab])
+  }, [activeTab, supabase])
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "linear-gradient(180deg, #0f1720, #071124)" }}>

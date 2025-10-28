@@ -17,6 +17,8 @@ export default function CreateListing() {
   const [amount, setAmount] = useState("")
   const [price, setPrice] = useState("")
   const [paymentMethods, setPaymentMethods] = useState<string[]>([])
+  const [terms, setTerms] = useState("")
+  const [paymentAccount, setPaymentAccount] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
   const supabase = createClient()
 
@@ -27,8 +29,8 @@ export default function CreateListing() {
   }
 
   const handleCreateListing = async () => {
-    if (!amount || !price || paymentMethods.length === 0) {
-      alert("Please fill in all fields")
+    if (!amount || !price || paymentMethods.length === 0 || !paymentAccount) {
+      alert("Please fill in all required fields")
       return
     }
 
@@ -45,25 +47,46 @@ export default function CreateListing() {
       } = await supabase.auth.getUser()
       if (!user) {
         alert("Please sign in to create a listing")
+        router.push("/auth/sign-in")
         return
       }
 
-      const { error } = await supabase.from("listings").insert({
+      console.log("[v0] Creating listing with data:", {
         user_id: user.id,
         listing_type: listingType,
         coin_amount: Number.parseFloat(amount),
         price_per_coin: Number.parseFloat(price),
         payment_methods: paymentMethods,
+        terms,
+        payment_account: paymentAccount,
         status: "active",
       })
 
-      if (error) throw error
+      const { data, error } = await supabase
+        .from("listings")
+        .insert({
+          user_id: user.id,
+          listing_type: listingType,
+          coin_amount: Number.parseFloat(amount),
+          price_per_coin: Number.parseFloat(price),
+          payment_methods: paymentMethods,
+          terms: terms || null,
+          payment_account: paymentAccount,
+          status: "active",
+        })
+        .select()
 
+      if (error) {
+        console.error("[v0] Error creating listing:", error)
+        throw error
+      }
+
+      console.log("[v0] Listing created successfully:", data)
       alert("Listing created successfully!")
       router.push("/market")
     } catch (error) {
       console.error("[v0] Error creating listing:", error)
-      alert("Failed to create listing")
+      alert("Failed to create listing. Please try again.")
     } finally {
       setIsProcessing(false)
     }
@@ -160,6 +183,33 @@ export default function CreateListing() {
                 </div>
               </div>
 
+              <div>
+                <label className="block text-sm font-semibold mb-2">
+                  Payment Account Number <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={paymentAccount}
+                  onChange={(e) => setPaymentAccount(e.target.value)}
+                  placeholder="e.g., M-Pesa: 0712345678 or Bank: 1234567890"
+                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-green-500"
+                />
+                <div className="text-xs text-gray-400 mt-1">
+                  Enter your M-Pesa number or bank account number for payments
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold mb-2">Terms of Trade (Optional)</label>
+                <textarea
+                  value={terms}
+                  onChange={(e) => setTerms(e.target.value)}
+                  placeholder="e.g., Payment within 30 minutes, No refunds after confirmation, etc."
+                  rows={3}
+                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-green-500 resize-none"
+                />
+              </div>
+
               {/* Total Summary */}
               {amount && price && (
                 <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/30">
@@ -175,7 +225,7 @@ export default function CreateListing() {
               {/* Create Button */}
               <button
                 onClick={handleCreateListing}
-                disabled={isProcessing || !amount || !price || paymentMethods.length === 0}
+                disabled={isProcessing || !amount || !price || paymentMethods.length === 0 || !paymentAccount}
                 className="w-full py-3 rounded-lg bg-gradient-to-r from-green-500 to-green-600 text-black font-semibold hover:shadow-lg hover:shadow-green-500/50 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isProcessing ? "Creating..." : "Create Listing"}
