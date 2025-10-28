@@ -15,7 +15,7 @@ export function MiningWidget() {
     return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`
   }
 
-  const progressPercent = nextMineTime > 0 ? ((7200 - nextMineTime) / 7200) * 100 : 100
+  const progressPercent = nextMineTime > 0 ? ((9000 - nextMineTime) / 9000) * 100 : 100
 
   const handleMine = () => {
     console.log("[v0] Mine button clicked")
@@ -48,7 +48,7 @@ export function MiningWidget() {
         </div>
 
         <div className="flex justify-between text-xs text-gray-400">
-          <span>Mining cycle: 2 hours</span>
+          <span>Mining cycle: 2.5 hours</span>
           <span>{Math.round(progressPercent)}% complete</span>
         </div>
       </div>
@@ -72,7 +72,7 @@ export function MiningWidget() {
 
       {/* Info */}
       <p className="text-xs text-gray-400 mt-4 text-center">
-        You can mine every 2 hours. Each mine gives you 30-80 GX coins.
+        You can mine every 2.5 hours. Each mine gives you exactly 2.50 GX coins.
       </p>
     </div>
   )

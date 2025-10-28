@@ -17,6 +17,8 @@ interface MiningContextType {
   activeTrades: Trade[]
   claimedCoins: ClaimedCoin[]
   userId: string | null
+  remainingSupply: number // Added remaining supply tracking
+  totalSupply: number // Added total supply tracking
   mine: () => Promise<void>
   addTransaction: (transaction: Transaction) => void
   updateBalance: (amount: number) => void
@@ -78,6 +80,8 @@ export function MiningProvider({ children }: { children: React.ReactNode }) {
   const [activeTrades, setActiveTrades] = useState<Trade[]>([])
   const [claimedCoins, setClaimedCoins] = useState<ClaimedCoin[]>([])
   const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [remainingSupply, setRemainingSupply] = useState(300000)
+  const [totalSupply, setTotalSupply] = useState(300000)
 
   useEffect(() => {
     const initializeUser = async () => {
@@ -87,10 +91,51 @@ export function MiningProvider({ children }: { children: React.ReactNode }) {
       if (user) {
         setUserId(user.id)
         await loadUserData(user.id)
+        await loadSupplyData()
       }
     }
     initializeUser()
   }, [])
+
+  useEffect(() => {
+    if (!userId) return
+
+    const updateTimer = async () => {
+      const { data: profile } = await supabase.from("profiles").select("next_mine_at").eq("id", userId).single()
+
+      if (profile?.next_mine_at) {
+        const nextMineDate = new Date(profile.next_mine_at)
+        const now = new Date()
+        const diffInSeconds = Math.max(0, Math.floor((nextMineDate.getTime() - now.getTime()) / 1000))
+        setNextMineTime(diffInSeconds)
+      } else {
+        setNextMineTime(0)
+      }
+    }
+
+    updateTimer()
+    const interval = setInterval(updateTimer, 1000)
+    return () => clearInterval(interval)
+  }, [userId])
+
+  const loadSupplyData = useCallback(async () => {
+    try {
+      const { data: supply } = await supabase.from("supply_tracking").select("*").single()
+
+      if (supply) {
+        setTotalSupply(Number(supply.total_supply))
+        setRemainingSupply(Number(supply.remaining_supply))
+        console.log("[v0] Supply loaded:", supply)
+      }
+    } catch (error) {
+      console.error("[v0] Error loading supply:", error)
+    }
+  }, [])
+
+  useEffect(() => {
+    const interval = setInterval(loadSupplyData, 5000) // Refresh every 5 seconds
+    return () => clearInterval(interval)
+  }, [loadSupplyData])
 
   useEffect(() => {
     if (!userId) return
@@ -119,7 +164,7 @@ export function MiningProvider({ children }: { children: React.ReactNode }) {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("rating, total_trades, referral_code")
+        .select("rating, total_trades, referral_code, total_mined, mining_streak, next_mine_at")
         .eq("id", uid)
         .single()
 
@@ -127,10 +172,14 @@ export function MiningProvider({ children }: { children: React.ReactNode }) {
         console.log("[v0] Profile loaded:", profile)
         setUserRating(Number(profile.rating) || 0.0)
         setUserTrades(Number(profile.total_trades) || 0)
+        setTotalMined(Number(profile.total_mined) || 0.0)
+        setMiningStreak(Number(profile.mining_streak) || 0)
       } else {
         console.log("[v0] No profile found, setting defaults")
         setUserRating(0.0)
         setUserTrades(0)
+        setTotalMined(0.0)
+        setMiningStreak(0)
       }
 
       const { data: coins } = await supabase.from("coins").select("*").eq("user_id", uid)
@@ -184,7 +233,14 @@ export function MiningProvider({ children }: { children: React.ReactNode }) {
 
     console.log("[v0] Starting mining...")
     setIsMining(true)
-    const reward = Math.random() * 50 + 30 // 30-80 GX
+    const reward = 2.5 // Fixed reward of 2.50 GX
+
+    if (remainingSupply < reward) {
+      alert("Mining halted: Maximum supply reached!")
+      setIsMining(false)
+      return
+    }
+
     setPendingReward(reward)
 
     try {
@@ -221,10 +277,30 @@ export function MiningProvider({ children }: { children: React.ReactNode }) {
 
       console.log("[v0] Transaction recorded")
 
+      const nextMineDate = new Date()
+      nextMineDate.setSeconds(nextMineDate.getSeconds() + 9000) // 2.5 hours
+
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({
+          last_mined_at: new Date().toISOString(),
+          next_mine_at: nextMineDate.toISOString(),
+          total_mined: totalMined + reward,
+          mining_streak: miningStreak + 1,
+        })
+        .eq("id", userId)
+
+      if (profileError) {
+        console.error("[v0] Profile update error:", profileError)
+        throw profileError
+      }
+
+      console.log("[v0] Profile updated with next mine time")
+
       setBalance((prev) => prev + reward)
       setTotalMined((prev) => prev + reward)
       setMiningStreak((prev) => prev + 1)
-      setNextMineTime(7200) // Reset to 2 hours
+      setNextMineTime(9000) // 2.5 hours in seconds
 
       addTransaction({
         id: transactions.length + 1,
@@ -233,6 +309,8 @@ export function MiningProvider({ children }: { children: React.ReactNode }) {
         time: "just now",
         status: "completed",
       })
+
+      await loadSupplyData()
 
       console.log("[v0] Mining completed! Reward:", reward)
 
@@ -245,7 +323,7 @@ export function MiningProvider({ children }: { children: React.ReactNode }) {
       setPendingReward(0)
       setIsMining(false)
     }
-  }, [isMining, nextMineTime, userId, transactions.length])
+  }, [isMining, nextMineTime, userId, transactions.length, totalMined, miningStreak, remainingSupply, loadSupplyData])
 
   const addTransaction = useCallback((transaction: Transaction) => {
     setTransactions((prev) => [transaction, ...prev])
@@ -424,6 +502,8 @@ export function MiningProvider({ children }: { children: React.ReactNode }) {
         activeTrades,
         claimedCoins,
         userId,
+        remainingSupply, // Added to context
+        totalSupply, // Added to context
         mine,
         addTransaction,
         updateBalance,
