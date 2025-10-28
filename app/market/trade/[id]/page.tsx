@@ -1,88 +1,102 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import Header from "@/components/header"
 import Footer from "@/components/footer"
-import { useMining } from "@/lib/mining-context"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Copy, CheckCircle } from "lucide-react"
+import { createBrowserClient } from "@supabase/ssr"
 
 export default function TradePage({ params }: { params: { id: string } }) {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const { createTrade, balance } = useMining()
-  const [isLoggedIn, setIsLoggedIn] = useState(true)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [listing, setListing] = useState<any>(null)
+  const [seller, setSeller] = useState<any>(null)
+  const [currentUser, setCurrentUser] = useState<any>(null)
   const [amount, setAmount] = useState("")
   const [paymentMethod, setPaymentMethod] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
-  const tradeType = searchParams.get("type") as "buy" | "sell"
+  const [loading, setLoading] = useState(true)
+  const [copied, setCopied] = useState(false)
 
-  const sellers: Record<string, any> = {
-    "seller-1": {
-      name: "CryptoKing",
-      rating: 4.9,
-      trades: 128,
-      price: 125.0,
-      paymentMethods: ["M-Pesa", "Bank Transfer"],
-      available: 500,
-    },
-    "seller-2": {
-      name: "TraderJane",
-      rating: 4.7,
-      trades: 93,
-      price: 123.5,
-      paymentMethods: ["M-Pesa"],
-      available: 250,
-    },
-    "seller-3": {
-      name: "SmartP2P",
-      rating: 5.0,
-      trades: 220,
-      price: 126.0,
-      paymentMethods: ["Airtel Money", "M-Pesa"],
-      available: 1000,
-    },
-    "buyer-1": {
-      name: "BuyerPro",
-      rating: 4.9,
-      trades: 145,
-      price: 124.0,
-      paymentMethods: ["M-Pesa", "Bank Transfer"],
-      available: 800,
-    },
-    "buyer-2": {
-      name: "GXCollector",
-      rating: 4.7,
-      trades: 78,
-      price: 122.5,
-      paymentMethods: ["M-Pesa"],
-      available: 400,
-    },
-    "buyer-3": {
-      name: "TrustTrade",
-      rating: 5.0,
-      trades: 203,
-      price: 125.5,
-      paymentMethods: ["Bank Transfer", "Airtel Money"],
-      available: 1200,
-    },
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  )
+
+  useEffect(() => {
+    fetchListingAndUser()
+  }, [params.id])
+
+  async function fetchListingAndUser() {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (user) {
+        setIsLoggedIn(true)
+        const { data: profile } = await supabase.from("profiles").select("*").eq("user_id", user.id).single()
+        setCurrentUser(profile)
+      }
+
+      const { data: listingData, error: listingError } = await supabase
+        .from("listings")
+        .select("*")
+        .eq("id", params.id)
+        .single()
+
+      if (listingError) throw listingError
+
+      setListing(listingData)
+
+      const { data: sellerData, error: sellerError } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("user_id", listingData.user_id)
+        .single()
+
+      if (sellerError) throw sellerError
+      setSeller(sellerData)
+    } catch (error) {
+      console.error("[v0] Error fetching listing:", error)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const seller = sellers[params.id]
-  if (!seller) {
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  if (loading) {
     return (
       <div className="min-h-screen flex flex-col">
         <Header isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} />
         <main className="flex-1 flex items-center justify-center">
-          <p className="text-gray-400">Seller not found</p>
+          <p className="text-gray-400">Loading...</p>
         </main>
         <Footer />
       </div>
     )
   }
 
-  const totalPrice = amount ? Number.parseFloat(amount) * seller.price : 0
+  if (!listing || !seller) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} />
+        <main className="flex-1 flex items-center justify-center">
+          <p className="text-gray-400">Listing not found</p>
+        </main>
+        <Footer />
+      </div>
+    )
+  }
+
+  const totalPrice = amount ? Number.parseFloat(amount) * listing.price : 0
+  const isSellListing = listing.listing_type === "sell"
 
   const handleInitiateTrade = async () => {
     if (!amount || !paymentMethod) {
@@ -90,30 +104,61 @@ export default function TradePage({ params }: { params: { id: string } }) {
       return
     }
 
-    if (tradeType === "buy" && totalPrice > balance) {
-      alert("Insufficient balance")
+    if (!currentUser) {
+      alert("Please sign in to trade")
+      router.push("/auth/sign-in")
+      return
+    }
+
+    const coinAmount = Number.parseFloat(amount)
+    if (coinAmount > listing.amount) {
+      alert("Amount exceeds available coins")
       return
     }
 
     setIsProcessing(true)
 
-    createTrade({
-      type: tradeType,
-      sellerId: params.id,
-      sellerName: seller.name,
-      sellerRating: seller.rating,
-      sellerTrades: seller.trades,
-      amount: Number.parseFloat(amount),
-      pricePerCoin: seller.price,
-      totalPrice,
-      paymentMethod,
-      status: "pending",
-    })
+    try {
+      const { data: trade, error: tradeError } = await supabase
+        .from("trades")
+        .insert({
+          listing_id: listing.id,
+          buyer_id: currentUser.user_id,
+          seller_id: listing.user_id,
+          coin_amount: coinAmount,
+          total_price: totalPrice,
+          payment_method: paymentMethod,
+          status: "payment_pending",
+          escrow_amount: coinAmount,
+        })
+        .select()
+        .single()
 
-    setTimeout(() => {
+      if (tradeError) throw tradeError
+
+      const { error: escrowError } = await supabase.rpc("move_coins_to_escrow", {
+        p_trade_id: trade.id,
+        p_seller_id: listing.user_id,
+        p_amount: coinAmount,
+      })
+
+      if (escrowError) {
+        console.error("[v0] Escrow error:", escrowError)
+      }
+
+      await supabase
+        .from("listings")
+        .update({ amount: listing.amount - coinAmount })
+        .eq("id", listing.id)
+
+      alert("Trade initiated! Coins moved to escrow. Please proceed to payment.")
+      router.push(`/market/trade-status/${trade.id}`)
+    } catch (error) {
+      console.error("[v0] Error creating trade:", error)
+      alert("Failed to create trade. Please try again.")
+    } finally {
       setIsProcessing(false)
-      router.push("/market")
-    }, 1500)
+    }
   }
 
   return (
@@ -122,36 +167,31 @@ export default function TradePage({ params }: { params: { id: string } }) {
 
       <main className="flex-1">
         <div className="max-w-2xl mx-auto px-7 py-9">
-          {/* Back Button */}
           <Link href="/market" className="flex items-center gap-2 text-green-400 hover:text-green-300 mb-6">
             <ArrowLeft size={20} />
             Back to Market
           </Link>
 
-          {/* Trade Card */}
           <div className="rounded-3xl p-8" style={{ background: "rgba(255,255,255,0.04)" }}>
-            <h1 className="text-3xl font-bold mb-2">{tradeType === "buy" ? "Buy GX from" : "Sell GX to"}</h1>
-            <p className="text-gray-400 mb-8">{seller.name}</p>
+            <h1 className="text-3xl font-bold mb-2">{isSellListing ? "Buy GX from" : "Sell GX to"}</h1>
+            <p className="text-gray-400 mb-8">{seller.username || "Anonymous"}</p>
 
-            {/* Seller Info */}
             <div className="grid grid-cols-3 gap-4 mb-8 pb-8 border-b border-white/10">
               <div>
                 <div className="text-sm text-gray-400">Rating</div>
-                <div className="text-xl font-bold text-yellow-400">⭐ {seller.rating}</div>
+                <div className="text-xl font-bold text-yellow-400">⭐ {seller.rating || 0}</div>
               </div>
               <div>
                 <div className="text-sm text-gray-400">Trades</div>
-                <div className="text-xl font-bold text-green-400">{seller.trades}</div>
+                <div className="text-xl font-bold text-green-400">{seller.total_trades || 0}</div>
               </div>
               <div>
                 <div className="text-sm text-gray-400">Price per GX</div>
-                <div className="text-xl font-bold text-green-400">KES {seller.price}</div>
+                <div className="text-xl font-bold text-green-400">KES {listing.price}</div>
               </div>
             </div>
 
-            {/* Trade Form */}
             <div className="space-y-6">
-              {/* Amount Input */}
               <div>
                 <label className="block text-sm font-semibold mb-2">Amount (GX)</label>
                 <input
@@ -160,12 +200,11 @@ export default function TradePage({ params }: { params: { id: string } }) {
                   onChange={(e) => setAmount(e.target.value)}
                   placeholder="Enter amount"
                   className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-green-500"
-                  max={seller.available}
+                  max={listing.amount}
                 />
-                <div className="text-xs text-gray-400 mt-1">Available: {seller.available} GX</div>
+                <div className="text-xs text-gray-400 mt-1">Available: {listing.amount} GX</div>
               </div>
 
-              {/* Payment Method */}
               <div>
                 <label className="block text-sm font-semibold mb-2">Payment Method</label>
                 <select
@@ -174,7 +213,7 @@ export default function TradePage({ params }: { params: { id: string } }) {
                   className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:border-green-500"
                 >
                   <option value="">Select payment method</option>
-                  {seller.paymentMethods.map((method) => (
+                  {listing.payment_methods?.map((method: string) => (
                     <option key={method} value={method}>
                       {method}
                     </option>
@@ -182,7 +221,28 @@ export default function TradePage({ params }: { params: { id: string } }) {
                 </select>
               </div>
 
-              {/* Total Price */}
+              {isSellListing && listing.payment_account && (
+                <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
+                  <div className="text-sm text-gray-400 mb-2">Payment Account</div>
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-green-400">{listing.payment_account}</span>
+                    <button
+                      onClick={() => copyToClipboard(listing.payment_account)}
+                      className="p-2 hover:bg-white/10 rounded-lg transition"
+                    >
+                      {copied ? <CheckCircle size={18} className="text-green-400" /> : <Copy size={18} />}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {listing.terms && (
+                <div className="p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
+                  <div className="text-sm text-gray-400 mb-2">Terms of Trade</div>
+                  <p className="text-sm text-gray-300">{listing.terms}</p>
+                </div>
+              )}
+
               {amount && (
                 <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/30">
                   <div className="flex justify-between items-center">
@@ -192,20 +252,18 @@ export default function TradePage({ params }: { params: { id: string } }) {
                 </div>
               )}
 
-              {/* Action Button */}
               <button
                 onClick={handleInitiateTrade}
                 disabled={isProcessing || !amount || !paymentMethod}
                 className="w-full py-3 rounded-lg bg-gradient-to-r from-green-500 to-green-600 text-black font-semibold hover:shadow-lg hover:shadow-green-500/50 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isProcessing ? "Processing..." : `${tradeType === "buy" ? "Buy" : "Sell"} GX`}
+                {isProcessing ? "Processing..." : `${isSellListing ? "Buy" : "Sell"} GX`}
               </button>
             </div>
 
-            {/* Info Box */}
             <div className="mt-8 p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
               <p className="text-sm text-gray-300">
-                This trade will be protected by escrow. Both parties must confirm before funds are released.
+                🔒 This trade is protected by escrow. Seller's coins are locked until payment is confirmed and released.
               </p>
             </div>
           </div>
