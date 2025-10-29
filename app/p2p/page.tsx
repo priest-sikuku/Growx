@@ -38,48 +38,45 @@ export default function P2PMarket() {
             </div>
 
             {/* Main Action Buttons - Horizontally aligned */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="flex gap-3">
               {/* BUY GX Button */}
               <Button
-                size="lg"
-                className="h-24 text-lg font-semibold bg-green-600 hover:bg-green-700"
+                className="flex-1 h-16 text-sm font-semibold bg-green-600 hover:bg-green-700"
                 onClick={() => {
                   // TODO: Navigate to buy GX page
                   console.log("[v0] BUY GX clicked")
                 }}
               >
-                <div className="flex flex-col items-center gap-2">
-                  <ArrowLeftRight size={24} className="rotate-90" />
+                <div className="flex flex-col items-center gap-1">
+                  <ArrowLeftRight size={18} className="rotate-90" />
                   <span>BUY GX</span>
                 </div>
               </Button>
 
               {/* SELL GX Button */}
               <Button
-                size="lg"
-                className="h-24 text-lg font-semibold bg-red-600 hover:bg-red-700"
+                className="flex-1 h-16 text-sm font-semibold bg-red-600 hover:bg-red-700"
                 onClick={() => {
                   // TODO: Navigate to sell GX page
                   console.log("[v0] SELL GX clicked")
                 }}
               >
-                <div className="flex flex-col items-center gap-2">
-                  <ArrowLeftRight size={24} className="-rotate-90" />
+                <div className="flex flex-col items-center gap-1">
+                  <ArrowLeftRight size={18} className="-rotate-90" />
                   <span>SELL GX</span>
                 </div>
               </Button>
 
               {/* POST AD Button */}
               <Button
-                size="lg"
-                className="h-24 text-lg font-semibold bg-blue-600 hover:bg-blue-700"
+                className="flex-1 h-16 text-sm font-semibold bg-blue-600 hover:bg-blue-700"
                 onClick={() => {
                   // TODO: Navigate to post ad page
                   console.log("[v0] POST AD clicked")
                 }}
               >
-                <div className="flex flex-col items-center gap-2">
-                  <Plus size={24} />
+                <div className="flex flex-col items-center gap-1">
+                  <Plus size={18} />
                   <span>POST AD</span>
                 </div>
               </Button>
