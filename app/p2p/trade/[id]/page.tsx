@@ -1,11 +1,12 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { ArrowLeft, User, CheckCircle, XCircle } from "lucide-react"
+import { ArrowLeft, User, CheckCircle, XCircle, Send } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
 import Header from "@/components/header"
 import Footer from "@/components/footer"
 import { createClient } from "@/lib/supabase/client"
@@ -39,6 +40,14 @@ interface Trade {
   }
 }
 
+interface Message {
+  id: string
+  trade_id: string
+  sender_id: string
+  message: string
+  created_at: string
+}
+
 export default function TradePage() {
   const params = useParams()
   const router = useRouter()
@@ -47,11 +56,28 @@ export default function TradePage() {
   const [loading, setLoading] = useState(true)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState(false)
+  const [messages, setMessages] = useState<Message[]>([])
+  const [newMessage, setNewMessage] = useState("")
+  const [sendingMessage, setSendingMessage] = useState(false)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     fetchTrade()
     getCurrentUser()
+    fetchMessages()
+    const unsubscribe = subscribeToMessages()
+    return () => {
+      unsubscribe()
+    }
   }, [params.id])
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages])
+
+  function scrollToBottom() {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }
 
   async function getCurrentUser() {
     const {
@@ -83,6 +109,73 @@ export default function TradePage() {
       console.error("[v0] Error:", error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function fetchMessages() {
+    try {
+      const { data, error } = await supabase
+        .from("trade_messages")
+        .select("*")
+        .eq("trade_id", params.id)
+        .order("created_at", { ascending: true })
+
+      if (error) {
+        console.error("[v0] Error fetching messages:", error)
+        return
+      }
+
+      setMessages(data || [])
+    } catch (error) {
+      console.error("[v0] Error:", error)
+    }
+  }
+
+  function subscribeToMessages() {
+    const channel = supabase
+      .channel(`trade_messages:${params.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "trade_messages",
+          filter: `trade_id=eq.${params.id}`,
+        },
+        (payload) => {
+          setMessages((prev) => [...prev, payload.new as Message])
+        },
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }
+
+  async function sendMessage() {
+    if (!newMessage.trim() || !currentUserId) return
+
+    try {
+      setSendingMessage(true)
+      const { error } = await supabase.from("trade_messages").insert({
+        trade_id: params.id,
+        sender_id: currentUserId,
+        message: newMessage.trim(),
+      })
+
+      if (error) {
+        console.error("[v0] Error sending message:", error)
+        alert("Failed to send message")
+        return
+      }
+
+      setNewMessage("")
+    } catch (error) {
+      console.error("[v0] Error:", error)
+      alert("Failed to send message")
+    } finally {
+      setSendingMessage(false)
     }
   }
 
@@ -306,6 +399,51 @@ export default function TradePage() {
                 <p className="text-sm">{trade.ad.terms_of_trade}</p>
               </div>
             )}
+          </Card>
+
+          <Card className="p-6 bg-white/5 border-white/10 mb-6">
+            <h3 className="font-semibold mb-4">Trade Chat</h3>
+            <div className="bg-black/20 rounded-lg p-4 h-64 overflow-y-auto mb-4">
+              {messages.length === 0 ? (
+                <p className="text-center text-gray-500 text-sm">No messages yet. Start the conversation!</p>
+              ) : (
+                <div className="space-y-3">
+                  {messages.map((msg) => (
+                    <div
+                      key={msg.id}
+                      className={`flex ${msg.sender_id === currentUserId ? "justify-end" : "justify-start"}`}
+                    >
+                      <div
+                        className={`max-w-[70%] rounded-lg p-3 ${
+                          msg.sender_id === currentUserId ? "bg-blue-600 text-white" : "bg-white/10 text-gray-200"
+                        }`}
+                      >
+                        <p className="text-sm">{msg.message}</p>
+                        <p className="text-xs opacity-70 mt-1">{new Date(msg.created_at).toLocaleTimeString()}</p>
+                      </div>
+                    </div>
+                  ))}
+                  <div ref={messagesEndRef} />
+                </div>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Type your message..."
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyPress={(e) => e.key === "Enter" && sendMessage()}
+                disabled={sendingMessage || trade.status === "completed" || trade.status === "cancelled"}
+              />
+              <Button
+                onClick={sendMessage}
+                disabled={
+                  sendingMessage || !newMessage.trim() || trade.status === "completed" || trade.status === "cancelled"
+                }
+              >
+                <Send size={18} />
+              </Button>
+            </div>
           </Card>
 
           {/* Action Buttons */}

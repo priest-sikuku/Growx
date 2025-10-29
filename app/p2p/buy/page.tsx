@@ -31,12 +31,21 @@ export default function BuyGXPage() {
   const [ads, setAds] = useState<Ad[]>([])
   const [loading, setLoading] = useState(true)
   const [initiatingTrade, setInitiatingTrade] = useState<string | null>(null)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const router = useRouter()
   const supabase = createClient()
 
   useEffect(() => {
     fetchSellAds()
+    getCurrentUser()
   }, [])
+
+  async function getCurrentUser() {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    setCurrentUserId(user?.id || null)
+  }
 
   async function fetchSellAds() {
     try {
@@ -71,7 +80,6 @@ export default function BuyGXPage() {
     try {
       setInitiatingTrade(ad.id)
 
-      // Get current user
       const {
         data: { user },
       } = await supabase.auth.getUser()
@@ -80,7 +88,12 @@ export default function BuyGXPage() {
         return
       }
 
-      // Call RPC function to initiate trade and move coins to escrow
+      if (user.id === ad.user_id) {
+        alert("You cannot trade with yourself")
+        setInitiatingTrade(null)
+        return
+      }
+
       const { data: tradeId, error } = await supabase.rpc("initiate_p2p_trade", {
         p_ad_id: ad.id,
         p_buyer_id: user.id,
@@ -94,7 +107,6 @@ export default function BuyGXPage() {
         return
       }
 
-      // Redirect to trade page
       router.push(`/p2p/trade/${tradeId}`)
     } catch (error) {
       console.error("[v0] Error:", error)
@@ -118,7 +130,6 @@ export default function BuyGXPage() {
       <Header />
       <main className="flex-1">
         <div className="max-w-7xl mx-auto px-6 py-12">
-          {/* Header */}
           <div className="mb-8">
             <Button variant="ghost" className="mb-4" onClick={() => router.push("/p2p")}>
               <ArrowLeft size={20} className="mr-2" />
@@ -128,7 +139,6 @@ export default function BuyGXPage() {
             <p className="text-gray-400">Browse available sell offers and buy GX from other users</p>
           </div>
 
-          {/* Ads List */}
           {loading ? (
             <div className="text-center py-12">
               <p className="text-gray-400">Loading ads...</p>
@@ -142,13 +152,15 @@ export default function BuyGXPage() {
               {ads.map((ad) => (
                 <Card key={ad.id} className="p-6 bg-white/5 border-white/10">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    {/* Left Side - Ad Details */}
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-3">
                         <User size={20} className="text-green-400" />
                         <span className="font-semibold">
                           {ad.profiles?.username || ad.profiles?.email || "Anonymous"}
                         </span>
+                        {currentUserId === ad.user_id && (
+                          <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded">Your Ad</span>
+                        )}
                       </div>
 
                       <div className="grid grid-cols-2 gap-4 mb-3">
@@ -182,14 +194,17 @@ export default function BuyGXPage() {
                       </div>
                     </div>
 
-                    {/* Right Side - Action Button */}
                     <div>
                       <Button
                         className="bg-green-600 hover:bg-green-700"
                         onClick={() => initiateTrade(ad)}
-                        disabled={initiatingTrade === ad.id}
+                        disabled={initiatingTrade === ad.id || currentUserId === ad.user_id}
                       >
-                        {initiatingTrade === ad.id ? "Initiating..." : "Buy Now"}
+                        {currentUserId === ad.user_id
+                          ? "Your Ad"
+                          : initiatingTrade === ad.id
+                            ? "Initiating..."
+                            : "Buy Now"}
                       </Button>
                     </div>
                   </div>
