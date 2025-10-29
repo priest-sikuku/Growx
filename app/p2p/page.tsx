@@ -10,11 +10,10 @@ export default function P2PMarket() {
   const router = useRouter()
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background">
       <Header />
       <main className="flex-1">
         <div className="max-w-7xl mx-auto px-6 py-12">
-          {/* Header */}
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-4">
               <ArrowLeftRight size={32} className="text-green-400" />
@@ -23,13 +22,13 @@ export default function P2PMarket() {
             <p className="text-gray-400">Buy and sell GX coins directly with other users</p>
           </div>
 
-          <div className="bg-white/5 border border-white/10 rounded-xl p-8">
+          <div className="glass-card border border-white/10 rounded-xl p-8">
             {/* My Trades Button - Small button above the main actions */}
             <div className="flex justify-end mb-6">
               <Button
                 variant="outline"
                 size="sm"
-                className="gap-2 bg-transparent"
+                className="gap-2 bg-transparent border-white/10 hover:bg-white/5"
                 onClick={() => {
                   router.push("/p2p/my-trades")
                 }}
@@ -43,7 +42,7 @@ export default function P2PMarket() {
             <div className="flex gap-3">
               {/* BUY GX Button */}
               <Button
-                className="flex-1 h-16 text-sm font-semibold bg-green-600 hover:bg-green-700"
+                className="flex-1 h-16 text-sm font-semibold btn-primary-gx hover:shadow-lg hover:shadow-green-500/50 transition"
                 onClick={() => router.push("/p2p/buy")}
               >
                 <div className="flex flex-col items-center gap-1">
@@ -54,7 +53,7 @@ export default function P2PMarket() {
 
               {/* SELL GX Button */}
               <Button
-                className="flex-1 h-16 text-sm font-semibold bg-red-600 hover:bg-red-700"
+                className="flex-1 h-16 text-sm font-semibold bg-gradient-to-r from-red-600 to-red-700 hover:shadow-lg hover:shadow-red-500/50 transition text-white"
                 onClick={() => router.push("/p2p/sell")}
               >
                 <div className="flex flex-col items-center gap-1">
@@ -65,7 +64,7 @@ export default function P2PMarket() {
 
               {/* POST AD Button */}
               <Button
-                className="flex-1 h-16 text-sm font-semibold bg-blue-600 hover:bg-blue-700"
+                className="flex-1 h-16 text-sm font-semibold bg-gradient-to-r from-blue-600 to-blue-700 hover:shadow-lg hover:shadow-blue-500/50 transition text-white"
                 onClick={() => router.push("/p2p/post-ad")}
               >
                 <div className="flex flex-col items-center gap-1">

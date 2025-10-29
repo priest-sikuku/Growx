@@ -289,7 +289,7 @@ export default function TradePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col bg-background">
         <Header />
         <main className="flex-1 flex items-center justify-center">
           <p className="text-gray-400">Loading trade...</p>
@@ -301,7 +301,7 @@ export default function TradePage() {
 
   if (!trade) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col bg-background">
         <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
@@ -315,25 +315,24 @@ export default function TradePage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background">
       <Header />
       <main className="flex-1">
         <div className="max-w-4xl mx-auto px-6 py-12">
-          <Button variant="ghost" className="mb-6" onClick={() => router.push("/p2p")}>
+          <Button variant="ghost" className="mb-6 hover:bg-white/5" onClick={() => router.push("/p2p")}>
             <ArrowLeft size={20} className="mr-2" />
             Back to P2P
           </Button>
 
           <div className="mb-6">
             <div className="flex items-center justify-between mb-2">
-              <h1 className="text-3xl font-bold">Trade Details</h1>
+              <h1 className="text-4xl font-bold">Trade Details</h1>
               {getStatusBadge(trade.status)}
             </div>
             <p className="text-sm text-gray-400">Trade ID: {trade.id}</p>
           </div>
 
-          {/* Trade Info */}
-          <Card className="p-6 bg-white/5 border-white/10 mb-6">
+          <Card className="p-6 glass-card border-white/10 mb-6">
             <div className="grid md:grid-cols-2 gap-6">
               <div>
                 <h3 className="font-semibold mb-4">Trade Information</h3>
@@ -383,8 +382,7 @@ export default function TradePage() {
             </div>
           </Card>
 
-          {/* Payment Details */}
-          <Card className="p-6 bg-white/5 border-white/10 mb-6">
+          <Card className="p-6 glass-card border-white/10 mb-6">
             <h3 className="font-semibold mb-4">Payment Details</h3>
             <div className="space-y-2">
               {getPaymentMethods().map((method, index) => (
@@ -401,7 +399,7 @@ export default function TradePage() {
             )}
           </Card>
 
-          <Card className="p-6 bg-white/5 border-white/10 mb-6">
+          <Card className="p-6 glass-card border-white/10 mb-6">
             <h3 className="font-semibold mb-4">Trade Chat</h3>
             <div className="bg-black/20 rounded-lg p-4 h-64 overflow-y-auto mb-4">
               {messages.length === 0 ? (
@@ -448,14 +446,14 @@ export default function TradePage() {
 
           {/* Action Buttons */}
           {trade.status !== "completed" && trade.status !== "cancelled" && (
-            <Card className="p-6 bg-white/5 border-white/10">
+            <Card className="p-6 glass-card border-white/10">
               <h3 className="font-semibold mb-4">Actions</h3>
               <div className="flex flex-wrap gap-3">
                 {isBuyer && trade.status === "escrowed" && (
                   <Button
                     onClick={markPaymentSent}
                     disabled={actionLoading}
-                    className="bg-green-600 hover:bg-green-700"
+                    className="btn-primary-gx hover:shadow-lg hover:shadow-green-500/50 transition"
                   >
                     <CheckCircle size={18} className="mr-2" />
                     {actionLoading ? "Processing..." : "I Have Paid"}
@@ -463,7 +461,11 @@ export default function TradePage() {
                 )}
 
                 {isSeller && (trade.status === "payment_sent" || trade.status === "escrowed") && (
-                  <Button onClick={releaseCoins} disabled={actionLoading} className="bg-blue-600 hover:bg-blue-700">
+                  <Button
+                    onClick={releaseCoins}
+                    disabled={actionLoading}
+                    className="bg-gradient-to-r from-blue-600 to-blue-700 hover:shadow-lg hover:shadow-blue-500/50 transition text-white"
+                  >
                     <CheckCircle size={18} className="mr-2" />
                     {actionLoading ? "Processing..." : "Release Coins"}
                   </Button>
@@ -479,7 +481,7 @@ export default function TradePage() {
 
           {/* Completed Message */}
           {trade.status === "completed" && (
-            <Card className="p-6 bg-green-500/10 border-green-500/20">
+            <Card className="p-6 glass-card bg-green-500/10 border-green-500/20">
               <div className="flex items-center gap-3">
                 <CheckCircle size={24} className="text-green-400" />
                 <div>

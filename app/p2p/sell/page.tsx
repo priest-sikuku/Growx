@@ -126,12 +126,12 @@ export default function SellGXPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background">
       <Header />
       <main className="flex-1">
         <div className="max-w-7xl mx-auto px-6 py-12">
           <div className="mb-8">
-            <Button variant="ghost" className="mb-4" onClick={() => router.push("/p2p")}>
+            <Button variant="ghost" className="mb-4 hover:bg-white/5" onClick={() => router.push("/p2p")}>
               <ArrowLeft size={20} className="mr-2" />
               Back to P2P
             </Button>
@@ -144,13 +144,13 @@ export default function SellGXPage() {
               <p className="text-gray-400">Loading ads...</p>
             </div>
           ) : ads.length === 0 ? (
-            <div className="text-center py-12">
+            <div className="glass-card border border-white/10 rounded-xl p-12 text-center">
               <p className="text-gray-400">No buy ads available at the moment</p>
             </div>
           ) : (
             <div className="grid gap-4">
               {ads.map((ad) => (
-                <Card key={ad.id} className="p-6 bg-white/5 border-white/10">
+                <Card key={ad.id} className="p-6 glass-card border-white/10 hover:bg-white/5 transition">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-3">
@@ -196,7 +196,7 @@ export default function SellGXPage() {
 
                     <div>
                       <Button
-                        className="bg-red-600 hover:bg-red-700"
+                        className="bg-gradient-to-r from-red-600 to-red-700 hover:shadow-lg hover:shadow-red-500/50 transition text-white"
                         onClick={() => initiateTrade(ad)}
                         disabled={initiatingTrade === ad.id || currentUserId === ad.user_id}
                       >

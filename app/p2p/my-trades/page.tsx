@@ -204,13 +204,12 @@ export default function MyTrades() {
   const expiredTrades = filterTradesByStatus("expired")
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background">
       <Header />
       <main className="flex-1">
         <div className="max-w-7xl mx-auto px-6 py-12">
-          {/* Header */}
           <div className="mb-8">
-            <Button variant="ghost" size="sm" className="mb-4" onClick={() => router.push("/p2p")}>
+            <Button variant="ghost" size="sm" className="mb-4 hover:bg-white/5" onClick={() => router.push("/p2p")}>
               <ArrowLeft size={16} className="mr-2" />
               Back to P2P Market
             </Button>
@@ -218,25 +217,24 @@ export default function MyTrades() {
             <p className="text-gray-400">View and manage all your P2P trades</p>
           </div>
 
-          {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-            <Card className="p-4">
+            <Card className="p-4 glass-card border-white/10">
               <p className="text-sm text-gray-400 mb-1">Total</p>
               <p className="text-2xl font-bold">{trades.length}</p>
             </Card>
-            <Card className="p-4">
+            <Card className="p-4 glass-card border-white/10">
               <p className="text-sm text-gray-400 mb-1">Pending</p>
               <p className="text-2xl font-bold text-yellow-500">{pendingTrades.length}</p>
             </Card>
-            <Card className="p-4">
+            <Card className="p-4 glass-card border-white/10">
               <p className="text-sm text-gray-400 mb-1">Payment Sent</p>
               <p className="text-2xl font-bold text-blue-500">{paymentSentTrades.length}</p>
             </Card>
-            <Card className="p-4">
+            <Card className="p-4 glass-card border-white/10">
               <p className="text-sm text-gray-400 mb-1">Completed</p>
               <p className="text-2xl font-bold text-green-500">{completedTrades.length}</p>
             </Card>
-            <Card className="p-4">
+            <Card className="p-4 glass-card border-white/10">
               <p className="text-sm text-gray-400 mb-1">Cancelled</p>
               <p className="text-2xl font-bold text-red-500">{cancelledTrades.length + expiredTrades.length}</p>
             </Card>
@@ -255,7 +253,7 @@ export default function MyTrades() {
 
             <TabsContent value="all" className="space-y-4 mt-6">
               {trades.length === 0 ? (
-                <Card className="p-8 text-center">
+                <Card className="p-8 text-center glass-card border-white/10">
                   <p className="text-gray-400">No trades yet</p>
                 </Card>
               ) : (

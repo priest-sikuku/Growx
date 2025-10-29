@@ -84,24 +84,21 @@ export default function PostAdPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background">
       <Header />
       <main className="flex-1">
         <div className="max-w-3xl mx-auto px-6 py-12">
-          {/* Back Button */}
-          <Button variant="ghost" className="mb-6" onClick={() => router.push("/p2p")}>
+          <Button variant="ghost" className="mb-6 hover:bg-white/5" onClick={() => router.push("/p2p")}>
             <ArrowLeft size={20} className="mr-2" />
             Back to P2P Market
           </Button>
 
-          {/* Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">Post an Ad</h1>
+            <h1 className="text-4xl font-bold mb-2">Post an Ad</h1>
             <p className="text-gray-400">Create a buy or sell ad for GX coins</p>
           </div>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="bg-white/5 border border-white/10 rounded-xl p-8 space-y-6">
+          <form onSubmit={handleSubmit} className="glass-card border border-white/10 rounded-xl p-8 space-y-6">
             {/* Ad Type Selection */}
             <div className="space-y-3">
               <Label className="text-base font-semibold">Ad Type</Label>
@@ -233,8 +230,11 @@ export default function PostAdPage() {
               />
             </div>
 
-            {/* Submit Button */}
-            <Button type="submit" className="w-full h-12 text-base font-semibold" disabled={loading}>
+            <Button
+              type="submit"
+              className="w-full h-12 text-base font-semibold btn-primary-gx hover:shadow-lg hover:shadow-green-500/50 transition"
+              disabled={loading}
+            >
               {loading ? "Posting Ad..." : "Post Ad"}
             </Button>
           </form>
