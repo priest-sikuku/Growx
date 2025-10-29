@@ -42,7 +42,7 @@ export default function CreateListing() {
       const data = await response.json()
       setLiveGxPrice(data.price)
     } catch (error) {
-      console.error("[v0] Error fetching live price:", error)
+      console.error("Error fetching live price:", error)
     }
   }
 
@@ -120,21 +120,18 @@ export default function CreateListing() {
         listingData.payment_account = paymentAccount
       }
 
-      console.log("[v0] Creating listing with data:", listingData)
-
       const { data, error } = await supabase.from("listings").insert(listingData).select()
 
       if (error) {
-        console.error("[v0] Error creating listing:", error)
+        console.error("Error creating listing:", error)
         alert(`Failed to create listing: ${error.message}`)
         throw error
       }
 
-      console.log("[v0] Listing created successfully:", data)
       alert("Listing created successfully! It will expire in 3 days.")
       router.push("/market")
     } catch (error: any) {
-      console.error("[v0] Error creating listing:", error)
+      console.error("Error creating listing:", error)
       alert(`Failed to create listing: ${error?.message || "Please try again."}`)
     } finally {
       setIsProcessing(false)
@@ -154,7 +151,7 @@ export default function CreateListing() {
 
           <div className="rounded-3xl p-8" style={{ background: "rgba(255,255,255,0.04)" }}>
             <h1 className="text-3xl font-bold mb-2">Create New Listing</h1>
-            <p className="text-gray-400 mb-8">Post your GX for sale or create a buy offer</p>
+            <p className="text-gray-400 mb-8">Post your GX for sale or create a buy offer (expires in 3 days)</p>
 
             <div className="mb-8">
               <label className="block text-sm font-semibold mb-3">Listing Type</label>
