@@ -4,8 +4,11 @@ import { ArrowLeftRight, Plus, History } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Header from "@/components/header"
 import Footer from "@/components/footer"
+import { useRouter } from "next/navigation"
 
 export default function P2PMarket() {
+  const router = useRouter()
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -42,10 +45,7 @@ export default function P2PMarket() {
               {/* BUY GX Button */}
               <Button
                 className="flex-1 h-16 text-sm font-semibold bg-green-600 hover:bg-green-700"
-                onClick={() => {
-                  // TODO: Navigate to buy GX page
-                  console.log("[v0] BUY GX clicked")
-                }}
+                onClick={() => router.push("/p2p/buy")}
               >
                 <div className="flex flex-col items-center gap-1">
                   <ArrowLeftRight size={18} className="rotate-90" />
@@ -56,10 +56,7 @@ export default function P2PMarket() {
               {/* SELL GX Button */}
               <Button
                 className="flex-1 h-16 text-sm font-semibold bg-red-600 hover:bg-red-700"
-                onClick={() => {
-                  // TODO: Navigate to sell GX page
-                  console.log("[v0] SELL GX clicked")
-                }}
+                onClick={() => router.push("/p2p/sell")}
               >
                 <div className="flex flex-col items-center gap-1">
                   <ArrowLeftRight size={18} className="-rotate-90" />
@@ -70,9 +67,7 @@ export default function P2PMarket() {
               {/* POST AD Button */}
               <Button
                 className="flex-1 h-16 text-sm font-semibold bg-blue-600 hover:bg-blue-700"
-                onClick={() => {
-                  window.location.href = "/p2p/post-ad"
-                }}
+                onClick={() => router.push("/p2p/post-ad")}
               >
                 <div className="flex flex-col items-center gap-1">
                   <Plus size={18} />
