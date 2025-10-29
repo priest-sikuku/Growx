@@ -95,11 +95,10 @@ export default function SellGXPage() {
         return
       }
 
-      const { data: tradeId, error } = await supabase.rpc("initiate_p2p_trade", {
+      const { data: tradeId, error } = await supabase.rpc("initiate_p2p_trade_v2", {
         p_ad_id: ad.id,
-        p_buyer_id: ad.user_id,
-        p_seller_id: user.id,
-        p_gx_amount: ad.gx_amount,
+        p_buyer_id: user.id,
+        p_gx_amount: ad.min_amount, // Start with minimum amount
       })
 
       if (error) {
@@ -108,6 +107,7 @@ export default function SellGXPage() {
         return
       }
 
+      console.log("[v0] Trade initiated successfully, redirecting to trade page")
       router.push(`/p2p/trade/${tradeId}`)
     } catch (error) {
       console.error("[v0] Error:", error)

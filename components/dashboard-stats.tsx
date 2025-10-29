@@ -1,9 +1,46 @@
+"use client"
+
 import { TrendingUp, Users } from "lucide-react"
-import { useMining } from "@/lib/mining-context"
 import { GXPriceDisplay } from "./gx-price-display"
+import { useEffect, useState } from "react"
+import { createClient } from "@/lib/supabase/client"
 
 export function DashboardStats() {
-  const { balance, totalMined, miningStreak, remainingSupply, totalSupply } = useMining()
+  const [balance, setBalance] = useState(0)
+  const [totalReferrals, setTotalReferrals] = useState(0)
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      const supabase = createClient()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
+      if (user) {
+        // Fetch balance from profiles
+        const { data: profile } = await supabase.from("profiles").select("total_mined").eq("id", user.id).single()
+
+        if (profile) {
+          setBalance(Number(profile.total_mined) || 0)
+        }
+
+        // Fetch referrals count
+        const { data: referrals } = await supabase
+          .from("referrals")
+          .select("id", { count: "exact" })
+          .eq("referrer_id", user.id)
+
+        if (referrals) {
+          setTotalReferrals(referrals.length)
+        }
+      }
+    }
+
+    fetchStats()
+    // Refresh every 5 seconds
+    const interval = setInterval(fetchStats, 5000)
+    return () => clearInterval(interval)
+  }, [])
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -21,7 +58,7 @@ export function DashboardStats() {
             <TrendingUp className="w-6 h-6 text-green-400" />
           </div>
         </div>
-        <div className="text-xs text-green-400">+3% daily growth</div>
+        <div className="text-xs text-green-400">Available for trading</div>
       </div>
 
       {/* Total Referrals Card */}
@@ -29,9 +66,7 @@ export function DashboardStats() {
         <div className="flex items-start justify-between mb-4">
           <div>
             <p className="text-gray-400 text-sm mb-1">Total Referrals</p>
-            <p className="text-3xl font-bold text-white" id="total-referrals-count">
-              0
-            </p>
+            <p className="text-3xl font-bold text-white">{totalReferrals}</p>
             <p className="text-xs text-gray-500 mt-1">Active Downlines</p>
           </div>
           <div className="p-3 bg-blue-500/10 rounded-lg">

@@ -81,34 +81,59 @@ export default function PostAdPage() {
         return
       }
 
-      const { data, error } = await supabase
-        .from("p2p_ads")
-        .insert({
-          user_id: user.id,
-          ad_type: adType,
-          gx_amount: Number.parseFloat(formData.gxAmount),
-          remaining_amount: Number.parseFloat(formData.gxAmount),
-          price_per_gx: pricePerGX,
-          min_amount: Number.parseFloat(formData.minAmount),
-          max_amount: Number.parseFloat(formData.maxAmount),
-          account_number: formData.accountNumber || null,
-          mpesa_number: formData.mpesaNumber || null,
-          paybill_number: formData.paybillNumber || null,
-          airtel_money: formData.airtelMoney || null,
-          terms_of_trade: formData.termsOfTrade || null,
+      if (adType === "sell") {
+        const { data, error } = await supabase.rpc("post_sell_ad_with_escrow", {
+          p_user_id: user.id,
+          p_gx_amount: Number.parseFloat(formData.gxAmount),
+          p_price_per_gx: pricePerGX,
+          p_min_amount: Number.parseFloat(formData.minAmount),
+          p_max_amount: Number.parseFloat(formData.maxAmount),
+          p_account_number: formData.accountNumber || null,
+          p_mpesa_number: formData.mpesaNumber || null,
+          p_paybill_number: formData.paybillNumber || null,
+          p_airtel_money: formData.airtelMoney || null,
+          p_terms_of_trade: formData.termsOfTrade || null,
         })
-        .select()
-        .single()
 
-      if (error) {
-        console.error("[v0] Error creating ad:", error)
-        alert("Failed to create ad: " + error.message)
-        return
+        if (error) {
+          console.error("[v0] Error creating sell ad:", error)
+          alert("Failed to create ad: " + error.message)
+          return
+        }
+
+        console.log("[v0] Sell ad created successfully, coins moved to escrow")
+        alert("Sell ad posted successfully! Your coins have been locked for this ad.")
+        router.push("/p2p")
+      } else {
+        const { data, error } = await supabase
+          .from("p2p_ads")
+          .insert({
+            user_id: user.id,
+            ad_type: adType,
+            gx_amount: Number.parseFloat(formData.gxAmount),
+            remaining_amount: Number.parseFloat(formData.gxAmount),
+            price_per_gx: pricePerGX,
+            min_amount: Number.parseFloat(formData.minAmount),
+            max_amount: Number.parseFloat(formData.maxAmount),
+            account_number: formData.accountNumber || null,
+            mpesa_number: formData.mpesaNumber || null,
+            paybill_number: formData.paybillNumber || null,
+            airtel_money: formData.airtelMoney || null,
+            terms_of_trade: formData.termsOfTrade || null,
+          })
+          .select()
+          .single()
+
+        if (error) {
+          console.error("[v0] Error creating buy ad:", error)
+          alert("Failed to create ad: " + error.message)
+          return
+        }
+
+        console.log("[v0] Buy ad created successfully:", data)
+        alert("Buy ad posted successfully!")
+        router.push("/p2p")
       }
-
-      console.log("[v0] Ad created successfully:", data)
-      alert("Ad posted successfully!")
-      router.push("/p2p")
     } catch (error) {
       console.error("[v0] Error:", error)
       alert("An error occurred while posting the ad")
