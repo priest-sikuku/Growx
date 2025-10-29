@@ -64,11 +64,11 @@ export default function TransactionsPage() {
   const totalExpense = transactions.filter((tx) => tx.amount < 0).reduce((sum, tx) => sum + Math.abs(tx.amount), 0)
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "linear-gradient(180deg, #0f1720, #071124)" }}>
+    <div className="min-h-screen flex flex-col">
       <Header isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} />
 
       <main className="flex-1">
-        <div className="max-w-6xl mx-auto px-7 py-9">
+        <div className="max-w-7xl mx-auto px-6 py-12">
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-4xl font-bold mb-2">Transaction History</h1>
@@ -77,15 +77,15 @@ export default function TransactionsPage() {
 
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="rounded-3xl p-6" style={{ background: "rgba(255,255,255,0.04)" }}>
+            <div className="glass-card p-6 rounded-xl border border-white/10">
               <p className="text-gray-400 text-sm mb-2">Total Transactions</p>
               <p className="text-3xl font-bold text-white">{transactions.length}</p>
             </div>
-            <div className="rounded-3xl p-6" style={{ background: "rgba(255,255,255,0.04)" }}>
+            <div className="glass-card p-6 rounded-xl border border-white/10">
               <p className="text-gray-400 text-sm mb-2">Total Income</p>
               <p className="text-3xl font-bold text-green-400">+{totalIncome.toFixed(2)} GX</p>
             </div>
-            <div className="rounded-3xl p-6" style={{ background: "rgba(255,255,255,0.04)" }}>
+            <div className="glass-card p-6 rounded-xl border border-white/10">
               <p className="text-gray-400 text-sm mb-2">Total Expense</p>
               <p className="text-3xl font-bold text-red-400">-{totalExpense.toFixed(2)} GX</p>
             </div>
@@ -97,7 +97,7 @@ export default function TransactionsPage() {
               onClick={() => setFilterType("all")}
               className={`px-4 py-2 rounded-lg font-semibold text-sm transition ${
                 filterType === "all"
-                  ? "bg-gradient-to-r from-green-500 to-green-600 text-black"
+                  ? "bg-gradient-to-r from-green-500 to-green-600 text-black shadow-lg shadow-green-500/50"
                   : "bg-white/5 border border-white/10 text-white hover:bg-white/10"
               }`}
             >
@@ -107,7 +107,7 @@ export default function TransactionsPage() {
               onClick={() => setFilterType("mine")}
               className={`px-4 py-2 rounded-lg font-semibold text-sm transition ${
                 filterType === "mine"
-                  ? "bg-gradient-to-r from-green-500 to-green-600 text-black"
+                  ? "bg-gradient-to-r from-green-500 to-green-600 text-black shadow-lg shadow-green-500/50"
                   : "bg-white/5 border border-white/10 text-white hover:bg-white/10"
               }`}
             >
@@ -117,7 +117,7 @@ export default function TransactionsPage() {
               onClick={() => setFilterType("claim")}
               className={`px-4 py-2 rounded-lg font-semibold text-sm transition ${
                 filterType === "claim"
-                  ? "bg-gradient-to-r from-green-500 to-green-600 text-black"
+                  ? "bg-gradient-to-r from-green-500 to-green-600 text-black shadow-lg shadow-green-500/50"
                   : "bg-white/5 border border-white/10 text-white hover:bg-white/10"
               }`}
             >
@@ -127,7 +127,7 @@ export default function TransactionsPage() {
               onClick={() => setFilterType("buy")}
               className={`px-4 py-2 rounded-lg font-semibold text-sm transition ${
                 filterType === "buy"
-                  ? "bg-gradient-to-r from-green-500 to-green-600 text-black"
+                  ? "bg-gradient-to-r from-green-500 to-green-600 text-black shadow-lg shadow-green-500/50"
                   : "bg-white/5 border border-white/10 text-white hover:bg-white/10"
               }`}
             >
@@ -137,7 +137,7 @@ export default function TransactionsPage() {
               onClick={() => setFilterType("sell")}
               className={`px-4 py-2 rounded-lg font-semibold text-sm transition ${
                 filterType === "sell"
-                  ? "bg-gradient-to-r from-green-500 to-green-600 text-black"
+                  ? "bg-gradient-to-r from-green-500 to-green-600 text-black shadow-lg shadow-green-500/50"
                   : "bg-white/5 border border-white/10 text-white hover:bg-white/10"
               }`}
             >
@@ -146,7 +146,7 @@ export default function TransactionsPage() {
           </div>
 
           {/* Transactions List */}
-          <div className="rounded-3xl p-8" style={{ background: "rgba(255,255,255,0.04)" }}>
+          <div className="glass-card p-8 rounded-xl border border-white/10">
             {filteredTransactions.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-gray-400">No transactions found</p>
@@ -189,10 +189,10 @@ export default function TransactionsPage() {
           </div>
 
           {/* Export Section */}
-          <div className="mt-8 rounded-3xl p-8 bg-blue-500/10 border border-blue-500/30">
+          <div className="mt-8 glass-card p-8 rounded-xl border border-blue-500/30 bg-blue-500/10">
             <h3 className="font-bold text-white mb-4">Export Your Data</h3>
             <p className="text-sm text-gray-300 mb-4">Download your complete transaction history for record keeping</p>
-            <button className="px-6 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold hover:shadow-lg hover:shadow-blue-500/50 transition">
+            <button className="px-6 py-3 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold hover:shadow-lg hover:shadow-blue-500/50 transition">
               Download CSV
             </button>
           </div>
