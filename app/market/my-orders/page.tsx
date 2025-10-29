@@ -46,32 +46,44 @@ export default function MyOrdersPage() {
     setLoading(true)
     try {
       if (activeTab === "ads") {
+        console.log("[v0] Fetching ads for user:", currentUserId)
         const { data, error } = await supabase
           .from("listings")
           .select("*")
           .eq("user_id", currentUserId)
           .order("created_at", { ascending: false })
 
-        if (error) throw error
+        if (error) {
+          console.error("[v0] Error fetching listings:", error)
+          throw error
+        }
+        console.log("[v0] Fetched listings:", data)
         setListings(data || [])
       } else {
+        console.log("[v0] Fetching trades for user:", currentUserId)
         const { data, error } = await supabase
           .from("trades")
-          .select("*")
+          .select(`
+            *,
+            listing:listings(*),
+            buyer:profiles!trades_buyer_id_fkey(id, username, avatar_url),
+            seller:profiles!trades_seller_id_fkey(id, username, avatar_url)
+          `)
           .or(`buyer_id.eq.${currentUserId},seller_id.eq.${currentUserId}`)
           .order("created_at", { ascending: false })
 
-        if (error) throw error
+        if (error) {
+          console.error("[v0] Error fetching trades:", error)
+          throw error
+        }
 
-        // Fetch usernames for trades
+        console.log("[v0] Fetched trades:", data)
+
         if (data && data.length > 0) {
-          const userIds = [...new Set([...data.map((t) => t.buyer_id), ...data.map((t) => t.seller_id)])]
-          const { data: profiles } = await supabase.from("profiles").select("id, username").in("id", userIds)
-
-          const tradesWithUsers = data.map((trade) => ({
+          const tradesWithUsers = data.map((trade: any) => ({
             ...trade,
-            buyer_username: profiles?.find((p) => p.id === trade.buyer_id)?.username || "Anonymous",
-            seller_username: profiles?.find((p) => p.id === trade.seller_id)?.username || "Anonymous",
+            buyer_username: trade.buyer?.username || "Anonymous",
+            seller_username: trade.seller?.username || "Anonymous",
           }))
 
           setTrades(tradesWithUsers)
@@ -80,7 +92,8 @@ export default function MyOrdersPage() {
         }
       }
     } catch (error) {
-      console.error("Error fetching data:", error)
+      console.error("[v0] Error fetching data:", error)
+      alert("Failed to fetch data. Please check console for details.")
     } finally {
       setLoading(false)
     }

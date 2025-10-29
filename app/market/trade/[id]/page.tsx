@@ -98,7 +98,12 @@ export default function TradePage({ params }: { params: { id: string } }) {
 
       const { data: tradeData, error: tradeError } = await supabase
         .from("trades")
-        .select("*")
+        .select(`
+          *,
+          listing:listings(*),
+          buyer:profiles!trades_buyer_id_fkey(id, username, email, avatar_url),
+          seller:profiles!trades_seller_id_fkey(id, username, email, avatar_url)
+        `)
         .eq("id", params.id)
         .single()
 
@@ -107,24 +112,30 @@ export default function TradePage({ params }: { params: { id: string } }) {
         throw tradeError
       }
 
+      if (!tradeData) {
+        console.error("[v0] No trade data returned")
+        setLoading(false)
+        return
+      }
+
       console.log("[v0] Trade data fetched:", tradeData)
       setTrade(tradeData)
+      setListing(tradeData.listing)
+      setBuyer(tradeData.buyer)
+      setSeller(tradeData.seller)
 
-      const [listingRes, buyerRes, sellerRes, messagesRes] = await Promise.all([
-        supabase.from("listings").select("*").eq("id", tradeData.listing_id).single(),
-        supabase.from("profiles").select("*").eq("id", tradeData.buyer_id).single(),
-        supabase.from("profiles").select("*").eq("id", tradeData.seller_id).single(),
-        supabase.from("trade_messages").select("*").eq("trade_id", params.id).order("created_at", { ascending: true }),
-      ])
+      const { data: messagesData, error: messagesError } = await supabase
+        .from("trade_messages")
+        .select("*")
+        .eq("trade_id", params.id)
+        .order("created_at", { ascending: true })
 
-      if (listingRes.error) console.error("[v0] Error fetching listing:", listingRes.error)
-      if (buyerRes.error) console.error("[v0] Error fetching buyer:", buyerRes.error)
-      if (sellerRes.error) console.error("[v0] Error fetching seller:", sellerRes.error)
-
-      setListing(listingRes.data)
-      setBuyer(buyerRes.data)
-      setSeller(sellerRes.data)
-      setMessages(messagesRes.data || [])
+      if (messagesError) {
+        console.error("[v0] Error fetching messages:", messagesError)
+      } else {
+        console.log("[v0] Fetched messages:", messagesData)
+        setMessages(messagesData || [])
+      }
     } catch (error) {
       console.error("[v0] Error in fetchTradeData:", error)
     } finally {
