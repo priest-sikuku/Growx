@@ -84,11 +84,11 @@ export default function PostAdPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1">
         <div className="max-w-3xl mx-auto px-6 py-12">
-          <Button variant="ghost" className="mb-6 hover:bg-white/5" onClick={() => router.push("/p2p")}>
+          <Button variant="ghost" className="mb-6 hover:bg-white/10 transition" onClick={() => router.push("/p2p")}>
             <ArrowLeft size={20} className="mr-2" />
             Back to P2P Market
           </Button>
@@ -232,7 +232,7 @@ export default function PostAdPage() {
 
             <Button
               type="submit"
-              className="w-full h-12 text-base font-semibold btn-primary-gx hover:shadow-lg hover:shadow-green-500/50 transition"
+              className="w-full h-12 text-base font-semibold bg-gradient-to-r from-green-500 to-green-600 text-black hover:shadow-lg hover:shadow-green-500/50 transition"
               disabled={loading}
             >
               {loading ? "Posting Ad..." : "Post Ad"}

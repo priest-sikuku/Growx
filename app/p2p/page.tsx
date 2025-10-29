@@ -10,7 +10,7 @@ export default function P2PMarket() {
   const router = useRouter()
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1">
         <div className="max-w-7xl mx-auto px-6 py-12">
@@ -28,7 +28,7 @@ export default function P2PMarket() {
               <Button
                 variant="outline"
                 size="sm"
-                className="gap-2 bg-transparent border-white/10 hover:bg-white/5"
+                className="gap-2 bg-white/5 border-white/10 hover:bg-white/10 transition"
                 onClick={() => {
                   router.push("/p2p/my-trades")
                 }}
@@ -42,7 +42,7 @@ export default function P2PMarket() {
             <div className="flex gap-3">
               {/* BUY GX Button */}
               <Button
-                className="flex-1 h-16 text-sm font-semibold btn-primary-gx hover:shadow-lg hover:shadow-green-500/50 transition"
+                className="flex-1 h-16 text-sm font-semibold bg-gradient-to-r from-green-500 to-green-600 text-black hover:shadow-lg hover:shadow-green-500/50 transition"
                 onClick={() => router.push("/p2p/buy")}
               >
                 <div className="flex flex-col items-center gap-1">
@@ -81,21 +81,21 @@ export default function P2PMarket() {
                 <div className="flex items-start gap-3">
                   <div className="w-2 h-2 bg-green-400 rounded-full mt-2" />
                   <div>
-                    <p className="font-semibold">Direct Trading</p>
+                    <p className="font-semibold text-white">Direct Trading</p>
                     <p className="text-gray-400">Buy and sell GX with other users</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="w-2 h-2 bg-green-400 rounded-full mt-2" />
                   <div>
-                    <p className="font-semibold">Secure Escrow</p>
+                    <p className="font-semibold text-white">Secure Escrow</p>
                     <p className="text-gray-400">Protected transactions with escrow system</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="w-2 h-2 bg-green-400 rounded-full mt-2" />
                   <div>
-                    <p className="font-semibold">Real-time Chat</p>
+                    <p className="font-semibold text-white">Real-time Chat</p>
                     <p className="text-gray-400">Communicate with traders during transactions</p>
                   </div>
                 </div>
