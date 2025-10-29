@@ -10,7 +10,7 @@ const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "GrowX — The Coin That Never Sleeps",
-  description: "GrowX (GX) — The Coin That Never Sleeps. Mine every 2 hours. 3% daily growth. P2P trading.",
+  description: "GrowX (GX) — The Coin That Never Sleeps. Mine every 2 hours. P2P trading.",
   generator: "v0.app",
 }
 
