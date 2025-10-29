@@ -71,8 +71,7 @@ export default function P2PMarket() {
               <Button
                 className="flex-1 h-16 text-sm font-semibold bg-blue-600 hover:bg-blue-700"
                 onClick={() => {
-                  // TODO: Navigate to post ad page
-                  console.log("[v0] POST AD clicked")
+                  window.location.href = "/p2p/post-ad"
                 }}
               >
                 <div className="flex flex-col items-center gap-1">
