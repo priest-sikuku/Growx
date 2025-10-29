@@ -1,6 +1,6 @@
 "use client"
 
-import { ArrowLeftRight, Plus, History } from "lucide-react"
+import { ArrowLeftRight, Plus, History, FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Header from "@/components/header"
 import Footer from "@/components/footer"
@@ -24,7 +24,18 @@ export default function P2PMarket() {
 
           <div className="glass-card border border-white/10 rounded-xl p-8">
             {/* My Trades Button - Small button above the main actions */}
-            <div className="flex justify-end mb-6">
+            <div className="flex justify-end gap-2 mb-6">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 bg-white/5 border-white/10 hover:bg-white/10 transition"
+                onClick={() => {
+                  router.push("/p2p/my-ads")
+                }}
+              >
+                <FileText size={16} />
+                My Ads
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
