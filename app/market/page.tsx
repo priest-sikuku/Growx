@@ -164,7 +164,24 @@ export default function MarketPage() {
 
       console.log("[v0] Trade created successfully with ID:", trade.id)
 
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      const { data: verifyTrade, error: verifyError } = await supabase
+        .from("trades")
+        .select("id")
+        .eq("id", trade.id)
+        .single()
+
+      if (verifyError || !verifyTrade) {
+        console.error("[v0] Trade verification failed:", verifyError)
+        alert("Trade created but verification failed. Check 'My Orders' to find your trade.")
+        setCreating(false)
+        return
+      }
+
+      console.log("[v0] Trade verified, redirecting to:", `/market/trade/${trade.id}`)
+
+      setSelectedListing(null)
+      setTradeAmount("")
+      setCreating(false)
 
       router.push(`/market/trade/${trade.id}`)
     } catch (error: any) {
