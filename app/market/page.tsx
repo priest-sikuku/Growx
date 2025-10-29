@@ -37,6 +37,7 @@ export default function MarketPage() {
   const [loading, setLoading] = useState(true)
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null)
   const [tradeAmount, setTradeAmount] = useState("")
+  const [creating, setCreating] = useState(false)
 
   useEffect(() => {
     checkAuth()
@@ -112,7 +113,7 @@ export default function MarketPage() {
   }
 
   async function handleInitiateTrade() {
-    if (!selectedListing || !tradeAmount || !currentUserId) return
+    if (!selectedListing || !tradeAmount || !currentUserId || creating) return
 
     const amount = Number.parseFloat(tradeAmount)
     if (
@@ -127,11 +128,14 @@ export default function MarketPage() {
       return
     }
 
+    setCreating(true)
+
     try {
+      const isBuyingFromSeller = activeTab === "buy"
       const tradeData = {
         listing_id: selectedListing.id,
-        buyer_id: activeTab === "buy" ? currentUserId : selectedListing.user_id,
-        seller_id: activeTab === "buy" ? selectedListing.user_id : currentUserId,
+        buyer_id: isBuyingFromSeller ? currentUserId : selectedListing.user_id,
+        seller_id: isBuyingFromSeller ? selectedListing.user_id : currentUserId,
         coin_amount: amount,
         price_per_coin: selectedListing.price_per_coin,
         total_price: amount * selectedListing.price_per_coin,
@@ -146,15 +150,26 @@ export default function MarketPage() {
 
       if (error) {
         console.error("[v0] Error creating trade:", error)
-        throw error
+        alert(`Failed to create trade: ${error.message}`)
+        setCreating(false)
+        return
+      }
+
+      if (!trade || !trade.id) {
+        console.error("[v0] Trade created but no ID returned:", trade)
+        alert("Failed to create trade. Please try again.")
+        setCreating(false)
+        return
       }
 
       console.log("[v0] Trade created successfully:", trade)
 
+      await new Promise((resolve) => setTimeout(resolve, 500))
       router.push(`/market/trade/${trade.id}`)
-    } catch (error) {
+    } catch (error: any) {
       console.error("[v0] Failed to initiate trade:", error)
-      alert("Failed to initiate trade. Please try again.")
+      alert(`Failed to initiate trade: ${error.message || "Unknown error"}`)
+      setCreating(false)
     }
   }
 
@@ -338,16 +353,23 @@ export default function MarketPage() {
                     setSelectedListing(null)
                     setTradeAmount("")
                   }}
-                  className="flex-1 py-3 rounded-lg bg-white/5 hover:bg-white/10 transition"
+                  disabled={creating}
+                  className="flex-1 py-3 rounded-lg bg-white/5 hover:bg-white/10 transition disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleInitiateTrade}
-                  disabled={!tradeAmount || !isLoggedIn}
+                  disabled={!tradeAmount || !isLoggedIn || creating}
                   className="flex-1 py-3 rounded-lg bg-gradient-to-r from-green-500 to-green-600 text-black font-semibold hover:shadow-lg hover:shadow-green-500/50 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {!isLoggedIn ? "Login Required" : activeTab === "buy" ? "Buy Now" : "Sell Now"}
+                  {creating
+                    ? "Creating..."
+                    : !isLoggedIn
+                      ? "Login Required"
+                      : activeTab === "buy"
+                        ? "Buy Now"
+                        : "Sell Now"}
                 </button>
               </div>
             </div>
