@@ -87,6 +87,9 @@ export default function Header() {
                 <Link href="/dashboard" className="text-sm hover:text-green-400 transition">
                   Dashboard
                 </Link>
+                <Link href="/p2p" className="text-sm hover:text-green-400 transition">
+                  P2P Market
+                </Link>
                 <Link href="/referrals" className="text-sm hover:text-green-400 transition">
                   Referrals
                 </Link>
@@ -134,6 +137,9 @@ export default function Header() {
               <>
                 <Link href="/dashboard" className="text-sm hover:text-green-400 transition">
                   Dashboard
+                </Link>
+                <Link href="/p2p" className="text-sm hover:text-green-400 transition">
+                  P2P Market
                 </Link>
                 <Link href="/referrals" className="text-sm hover:text-green-400 transition">
                   Referrals

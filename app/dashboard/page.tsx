@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import Header from "@/components/header"
 import Footer from "@/components/footer"
 import { DashboardStats } from "@/components/dashboard-stats"
@@ -9,6 +10,7 @@ import { TransactionHistory } from "@/components/transaction-history"
 import { useMining } from "@/lib/mining-context"
 import { UserStatsCard } from "@/components/user-stats-card"
 import { PriceHistoryChart } from "@/components/price-history-chart"
+import { ArrowLeftRight } from "lucide-react"
 
 export default function Dashboard() {
   const [isLoggedIn, setIsLoggedIn] = useState(true)
@@ -55,9 +57,18 @@ export default function Dashboard() {
       <main className="flex-1">
         <div className="max-w-7xl mx-auto px-6 py-12">
           {/* Welcome Section */}
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold mb-2">Welcome back!</h1>
-            <p className="text-gray-400">Your mining dashboard is ready. Keep earning GX every 2.5 hours.</p>
+          <div className="mb-8 flex items-center justify-between">
+            <div>
+              <h1 className="text-4xl font-bold mb-2">Welcome back!</h1>
+              <p className="text-gray-400">Your mining dashboard is ready. Keep earning GX every 2.5 hours.</p>
+            </div>
+            <Link
+              href="/p2p"
+              className="flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-green-500 to-green-600 text-black font-semibold hover:shadow-lg hover:shadow-green-500/50 transition"
+            >
+              <ArrowLeftRight size={20} />
+              P2P Trading
+            </Link>
           </div>
 
           {/* Stats Grid */}
