@@ -30,6 +30,7 @@ interface Ad {
 export default function BuyGXPage() {
   const [ads, setAds] = useState<Ad[]>([])
   const [loading, setLoading] = useState(true)
+  const [initiatingTrade, setInitiatingTrade] = useState<string | null>(null)
   const router = useRouter()
   const supabase = createClient()
 
@@ -39,8 +40,6 @@ export default function BuyGXPage() {
 
   async function fetchSellAds() {
     try {
-      console.log("[v0] Fetching sell ads for buy page...")
-
       const { data, error } = await supabase
         .from("p2p_ads")
         .select(`
@@ -60,12 +59,48 @@ export default function BuyGXPage() {
         return
       }
 
-      console.log("[v0] Fetched ads:", data)
       setAds(data || [])
     } catch (error) {
       console.error("[v0] Error:", error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function initiateTrade(ad: Ad) {
+    try {
+      setInitiatingTrade(ad.id)
+
+      // Get current user
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user) {
+        alert("Please sign in to trade")
+        return
+      }
+
+      // Call RPC function to initiate trade and move coins to escrow
+      const { data: tradeId, error } = await supabase.rpc("initiate_p2p_trade", {
+        p_ad_id: ad.id,
+        p_buyer_id: user.id,
+        p_seller_id: ad.user_id,
+        p_gx_amount: ad.gx_amount,
+      })
+
+      if (error) {
+        console.error("[v0] Error initiating trade:", error)
+        alert(error.message || "Failed to initiate trade")
+        return
+      }
+
+      // Redirect to trade page
+      router.push(`/p2p/trade/${tradeId}`)
+    } catch (error) {
+      console.error("[v0] Error:", error)
+      alert("Failed to initiate trade")
+    } finally {
+      setInitiatingTrade(null)
     }
   }
 
@@ -151,12 +186,10 @@ export default function BuyGXPage() {
                     <div>
                       <Button
                         className="bg-green-600 hover:bg-green-700"
-                        onClick={() => {
-                          // TODO: Initiate trade
-                          console.log("[v0] Initiating trade with ad:", ad.id)
-                        }}
+                        onClick={() => initiateTrade(ad)}
+                        disabled={initiatingTrade === ad.id}
                       >
-                        Buy Now
+                        {initiatingTrade === ad.id ? "Initiating..." : "Buy Now"}
                       </Button>
                     </div>
                   </div>
