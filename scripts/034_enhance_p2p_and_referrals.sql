@@ -5,9 +5,15 @@ ALTER TABLE p2p_ads ADD COLUMN IF NOT EXISTS remaining_amount DECIMAL(10, 2);
 -- Update remaining_amount to match gx_amount for existing ads
 UPDATE p2p_ads SET remaining_amount = gx_amount WHERE remaining_amount IS NULL;
 
+-- Update existing ads with gx_amount < 50 to meet new minimum requirement
+UPDATE p2p_ads SET gx_amount = 50, remaining_amount = 50 WHERE gx_amount < 50;
+
 -- Add check constraint for minimum amounts
 ALTER TABLE p2p_ads DROP CONSTRAINT IF EXISTS check_min_gx_amount;
 ALTER TABLE p2p_ads ADD CONSTRAINT check_min_gx_amount CHECK (gx_amount >= 50);
+
+-- Update existing trades with gx_amount < 2 to meet new minimum requirement
+UPDATE p2p_trades SET gx_amount = 2 WHERE gx_amount < 2;
 
 ALTER TABLE p2p_trades DROP CONSTRAINT IF EXISTS check_min_trade_amount;
 ALTER TABLE p2p_trades ADD CONSTRAINT check_min_trade_amount CHECK (gx_amount >= 2);
