@@ -18,13 +18,22 @@ export default function EditListing() {
   const [price, setPrice] = useState("")
   const [paymentMethods, setPaymentMethods] = useState<string[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
+  const [liveGxPrice, setLiveGxPrice] = useState<number | null>(null)
+  const [priceError, setPriceError] = useState("")
   const supabase = createClient()
 
   const availablePaymentMethods = ["M-Pesa", "Bank Transfer", "Airtel Money"]
 
   useEffect(() => {
     fetchListing()
+    fetchLivePrice()
+    const interval = setInterval(fetchLivePrice, 5000)
+    return () => clearInterval(interval)
   }, [])
+
+  useEffect(() => {
+    validatePrice()
+  }, [price, liveGxPrice])
 
   const fetchListing = async () => {
     try {
@@ -45,6 +54,35 @@ export default function EditListing() {
     }
   }
 
+  const fetchLivePrice = async () => {
+    try {
+      const response = await fetch("/api/gx-price")
+      const data = await response.json()
+      setLiveGxPrice(data.price)
+    } catch (error) {
+      console.error("[v0] Error fetching live price:", error)
+    }
+  }
+
+  const validatePrice = () => {
+    if (!price || !liveGxPrice) {
+      setPriceError("")
+      return
+    }
+
+    const priceNum = Number.parseFloat(price)
+    const minPrice = liveGxPrice * 0.97 // -3%
+    const maxPrice = liveGxPrice * 1.03 // +3%
+
+    if (priceNum < minPrice || priceNum > maxPrice) {
+      setPriceError(
+        `Price must be within ±3% of live GX price (KES ${minPrice.toFixed(2)} - KES ${maxPrice.toFixed(2)})`,
+      )
+    } else {
+      setPriceError("")
+    }
+  }
+
   const togglePaymentMethod = (method: string) => {
     setPaymentMethods((prev) => (prev.includes(method) ? prev.filter((m) => m !== method) : [...prev, method]))
   }
@@ -52,6 +90,11 @@ export default function EditListing() {
   const handleUpdateListing = async () => {
     if (!amount || !price || paymentMethods.length === 0) {
       alert("Please fill in all fields")
+      return
+    }
+
+    if (priceError) {
+      alert(priceError)
       return
     }
 
@@ -120,13 +163,27 @@ export default function EditListing() {
 
               <div>
                 <label className="block text-sm font-semibold mb-2">Price per GX (KES)</label>
+                {liveGxPrice && (
+                  <div className="mb-2 p-3 rounded-lg bg-blue-500/10 border border-blue-500/30">
+                    <div className="text-sm text-blue-300">
+                      Live GX Price: <span className="font-bold">KES {liveGxPrice.toFixed(2)}</span>
+                    </div>
+                    <div className="text-xs text-gray-400 mt-1">
+                      Allowed range: KES {(liveGxPrice * 0.97).toFixed(2)} - KES {(liveGxPrice * 1.03).toFixed(2)} (±3%)
+                    </div>
+                  </div>
+                )}
                 <input
                   type="number"
+                  step="0.01"
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
                   placeholder="Enter price"
-                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-green-500"
+                  className={`w-full px-4 py-3 rounded-lg bg-white/5 border ${
+                    priceError ? "border-red-500" : "border-white/10"
+                  } text-white placeholder-gray-500 focus:outline-none focus:border-green-500`}
                 />
+                {priceError && <div className="text-xs text-red-400 mt-1">{priceError}</div>}
               </div>
 
               <div>
@@ -159,7 +216,7 @@ export default function EditListing() {
 
               <button
                 onClick={handleUpdateListing}
-                disabled={isProcessing || !amount || !price || paymentMethods.length === 0}
+                disabled={isProcessing || !amount || !price || paymentMethods.length === 0 || !!priceError}
                 className="w-full py-3 rounded-lg bg-gradient-to-r from-green-500 to-green-600 text-black font-semibold hover:shadow-lg hover:shadow-green-500/50 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isProcessing ? "Updating..." : "Update Listing"}
