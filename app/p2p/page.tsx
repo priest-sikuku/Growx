@@ -31,8 +31,7 @@ export default function P2PMarket() {
                 size="sm"
                 className="gap-2 bg-transparent"
                 onClick={() => {
-                  // TODO: Navigate to my trades page
-                  console.log("[v0] My Trades clicked")
+                  router.push("/p2p/my-trades")
                 }}
               >
                 <History size={16} />
