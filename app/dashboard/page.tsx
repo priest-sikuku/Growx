@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import Header from "@/components/header"
 import Footer from "@/components/footer"
@@ -11,12 +11,38 @@ import { useMining } from "@/lib/mining-context"
 import { UserStatsCard } from "@/components/user-stats-card"
 import { PriceHistoryChart } from "@/components/price-history-chart"
 import { ArrowLeftRight } from "lucide-react"
+import { createClient } from "@/lib/supabase/client"
 
 export default function Dashboard() {
   const [isLoggedIn, setIsLoggedIn] = useState(true)
   const { claimCoins, balance, claimedCoins } = useMining()
   const [claimAmount, setClaimAmount] = useState("")
   const [isClaimProcessing, setIsClaimProcessing] = useState(false)
+
+  useEffect(() => {
+    const fetchReferralsCount = async () => {
+      const supabase = createClient()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
+      if (user) {
+        const { data, error } = await supabase
+          .from("referrals")
+          .select("id", { count: "exact" })
+          .eq("referrer_id", user.id)
+
+        if (!error && data) {
+          const countElement = document.getElementById("total-referrals-count")
+          if (countElement) {
+            countElement.textContent = data.length.toString()
+          }
+        }
+      }
+    }
+
+    fetchReferralsCount()
+  }, [])
 
   if (!isLoggedIn) {
     return (

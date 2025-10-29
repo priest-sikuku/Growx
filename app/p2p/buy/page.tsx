@@ -24,6 +24,8 @@ interface Ad {
     username: string | null
     email: string | null
   }
+  remaining_amount?: number
+  price_per_gx?: number
 }
 
 export default function BuyGXPage() {
@@ -148,7 +150,7 @@ export default function BuyGXPage() {
             <div className="glass-card p-8 rounded-xl border border-white/10">
               <div className="text-center">
                 <div className="text-5xl font-bold text-blue-400 mb-2">
-                  {ads.reduce((sum, ad) => sum + ad.gx_amount, 0).toFixed(2)}
+                  {ads.reduce((sum, ad) => sum + (ad.remaining_amount || ad.gx_amount), 0).toFixed(2)}
                 </div>
                 <p className="text-gray-400">Total GX Available</p>
               </div>
@@ -156,7 +158,9 @@ export default function BuyGXPage() {
             <div className="glass-card p-8 rounded-xl border border-white/10">
               <div className="text-center">
                 <div className="text-5xl font-bold text-yellow-400 mb-2">
-                  {ads.length > 0 ? (ads.reduce((sum, ad) => sum + ad.gx_amount, 0) / ads.length).toFixed(2) : "0"}
+                  {ads.length > 0
+                    ? (ads.reduce((sum, ad) => sum + (ad.remaining_amount || ad.gx_amount), 0) / ads.length).toFixed(2)
+                    : "0"}
                 </div>
                 <p className="text-gray-400">Avg. Amount</p>
               </div>
@@ -202,13 +206,12 @@ export default function BuyGXPage() {
                         <div className="grid grid-cols-2 gap-4 mb-3">
                           <div>
                             <p className="text-sm text-gray-400">Amount</p>
-                            <p className="font-bold text-lg text-green-400">{ad.gx_amount} GX</p>
+                            <p className="font-bold text-lg text-green-400">{ad.remaining_amount || ad.gx_amount} GX</p>
+                            <p className="text-xs text-gray-500">Available</p>
                           </div>
                           <div>
-                            <p className="text-sm text-gray-400">Limit</p>
-                            <p className="font-semibold text-white">
-                              {ad.min_amount} - {ad.max_amount} GX
-                            </p>
+                            <p className="text-sm text-gray-400">Price per GX</p>
+                            <p className="font-semibold text-white">{ad.price_per_gx || "N/A"} KES</p>
                           </div>
                         </div>
 

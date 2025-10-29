@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -19,8 +19,10 @@ export default function PostAdPage() {
   const router = useRouter()
   const [adType, setAdType] = useState<"buy" | "sell">("sell")
   const [loading, setLoading] = useState(false)
+  const [currentGXPrice, setCurrentGXPrice] = useState<number>(16)
   const [formData, setFormData] = useState({
     gxAmount: "",
+    pricePerGX: "",
     minAmount: "",
     maxAmount: "",
     accountNumber: "",
@@ -30,12 +32,43 @@ export default function PostAdPage() {
     termsOfTrade: "",
   })
 
+  useEffect(() => {
+    const fetchGXPrice = async () => {
+      const supabase = createClient()
+      const { data, error } = await supabase.from("gx_current_price").select("price").single()
+
+      if (!error && data) {
+        setCurrentGXPrice(data.price)
+        // Set default price to current price
+        setFormData((prev) => ({ ...prev, pricePerGX: data.price.toString() }))
+      }
+    }
+
+    fetchGXPrice()
+  }, [])
+
+  const minAllowedPrice = (currentGXPrice * 0.96).toFixed(2)
+  const maxAllowedPrice = (currentGXPrice * 1.04).toFixed(2)
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
 
     try {
       const supabase = createClient()
+
+      if (Number.parseFloat(formData.gxAmount) < 50) {
+        alert("Minimum amount to post an ad is 50 GX")
+        setLoading(false)
+        return
+      }
+
+      const pricePerGX = Number.parseFloat(formData.pricePerGX)
+      if (pricePerGX < Number.parseFloat(minAllowedPrice) || pricePerGX > Number.parseFloat(maxAllowedPrice)) {
+        alert(`Price must be between ${minAllowedPrice} and ${maxAllowedPrice} KES (±4% of current price)`)
+        setLoading(false)
+        return
+      }
 
       // Get current user
       const {
@@ -48,13 +81,14 @@ export default function PostAdPage() {
         return
       }
 
-      // Insert ad into database
       const { data, error } = await supabase
         .from("p2p_ads")
         .insert({
           user_id: user.id,
           ad_type: adType,
           gx_amount: Number.parseFloat(formData.gxAmount),
+          remaining_amount: Number.parseFloat(formData.gxAmount),
+          price_per_gx: pricePerGX,
           min_amount: Number.parseFloat(formData.minAmount),
           max_amount: Number.parseFloat(formData.maxAmount),
           account_number: formData.accountNumber || null,
@@ -95,7 +129,7 @@ export default function PostAdPage() {
 
           <div className="mb-8">
             <h1 className="text-4xl font-bold mb-2">Post an Ad</h1>
-            <p className="text-gray-400">Create a buy or sell ad for GX coins</p>
+            <p className="text-gray-400">Create a buy or sell ad for GX coins (Minimum: 50 GX)</p>
           </div>
 
           <form onSubmit={handleSubmit} className="glass-card p-8 rounded-xl border border-white/10 space-y-6">
@@ -124,34 +158,54 @@ export default function PostAdPage() {
 
             {/* GX Amount */}
             <div className="space-y-2">
-              <Label htmlFor="gxAmount">Amount of GX *</Label>
+              <Label htmlFor="gxAmount">Amount of GX * (Minimum: 50 GX)</Label>
               <Input
                 id="gxAmount"
                 type="number"
                 step="0.01"
-                placeholder="Enter GX amount"
+                min="50"
+                placeholder="Enter GX amount (min 50)"
                 value={formData.gxAmount}
                 onChange={(e) => setFormData({ ...formData, gxAmount: e.target.value })}
                 required
               />
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="pricePerGX">Price per GX (KES) *</Label>
+              <Input
+                id="pricePerGX"
+                type="number"
+                step="0.01"
+                min={minAllowedPrice}
+                max={maxAllowedPrice}
+                placeholder={`Between ${minAllowedPrice} - ${maxAllowedPrice} KES`}
+                value={formData.pricePerGX}
+                onChange={(e) => setFormData({ ...formData, pricePerGX: e.target.value })}
+                required
+              />
+              <p className="text-xs text-gray-400">
+                Current GX price: {currentGXPrice} KES. Allowed range: {minAllowedPrice} - {maxAllowedPrice} KES (±4%)
+              </p>
+            </div>
+
             {/* Min and Max Amount */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="minAmount">Min Amount (KES) *</Label>
+                <Label htmlFor="minAmount">Min Amount (GX) * (Minimum: 2 GX)</Label>
                 <Input
                   id="minAmount"
                   type="number"
                   step="0.01"
-                  placeholder="Minimum"
+                  min="2"
+                  placeholder="Minimum (min 2)"
                   value={formData.minAmount}
                   onChange={(e) => setFormData({ ...formData, minAmount: e.target.value })}
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="maxAmount">Max Amount (KES) *</Label>
+                <Label htmlFor="maxAmount">Max Amount (GX) *</Label>
                 <Input
                   id="maxAmount"
                   type="number"
@@ -242,6 +296,9 @@ export default function PostAdPage() {
           <div className="mt-8 glass-card p-8 rounded-xl border border-blue-500/30 bg-blue-500/10">
             <h3 className="font-bold text-white mb-4">Tips for Creating Successful Ads</h3>
             <ul className="space-y-2 text-sm text-gray-300">
+              <li>Minimum posting amount: 50 GX</li>
+              <li>Minimum trade amount: 2 GX</li>
+              <li>Price must be within ±4% of current GX price</li>
               <li>Set competitive prices to attract more traders</li>
               <li>Provide multiple payment methods for flexibility</li>
               <li>Write clear terms to avoid misunderstandings</li>
