@@ -6,9 +6,9 @@ import Footer from "@/components/footer"
 import { DashboardStats } from "@/components/dashboard-stats"
 import { MiningWidget } from "@/components/mining-widget"
 import { TransactionHistory } from "@/components/transaction-history"
-import { WalletOverview } from "@/components/wallet-overview"
 import { useMining } from "@/lib/mining-context"
-import { Gift } from "lucide-react"
+import { UserStatsCard } from "@/components/user-stats-card"
+import { PriceHistoryChart } from "@/components/price-history-chart"
 
 export default function Dashboard() {
   const [isLoggedIn, setIsLoggedIn] = useState(true)
@@ -57,7 +57,7 @@ export default function Dashboard() {
           {/* Welcome Section */}
           <div className="mb-8">
             <h1 className="text-4xl font-bold mb-2">Welcome back!</h1>
-            <p className="text-gray-400">Your mining dashboard is ready. Keep earning GX every 2 hours.</p>
+            <p className="text-gray-400">Your mining dashboard is ready. Keep earning GX every 2.5 hours.</p>
           </div>
 
           {/* Stats Grid */}
@@ -68,72 +68,8 @@ export default function Dashboard() {
             {/* Left Column - Mining & Wallet */}
             <div className="lg:col-span-2 space-y-8">
               <MiningWidget />
-              <WalletOverview />
-
-              <div className="rounded-3xl p-8" style={{ background: "rgba(255,255,255,0.04)" }}>
-                <div className="flex items-center gap-3 mb-6">
-                  <Gift className="text-yellow-400" size={28} />
-                  <h3 className="text-2xl font-bold">Claim Your Coins</h3>
-                </div>
-
-                <p className="text-gray-400 mb-6">
-                  Lock in your GX coins for 7 days to earn bonus rewards. Claimed coins cannot be traded during the lock
-                  period.
-                </p>
-
-                <div className="space-y-4">
-                  {/* Claim Amount Input */}
-                  <div>
-                    <label className="block text-sm font-semibold mb-2">Amount to Claim (GX)</label>
-                    <input
-                      type="number"
-                      value={claimAmount}
-                      onChange={(e) => setClaimAmount(e.target.value)}
-                      placeholder="Enter amount"
-                      max={balance}
-                      className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-green-500"
-                    />
-                    <div className="text-xs text-gray-400 mt-1">Available: {balance.toFixed(2)} GX</div>
-                  </div>
-
-                  {/* Claim Button */}
-                  <button
-                    onClick={handleClaimCoins}
-                    disabled={isClaimProcessing || !claimAmount}
-                    className="w-full py-3 rounded-lg bg-gradient-to-r from-yellow-500 to-yellow-600 text-black font-semibold hover:shadow-lg hover:shadow-yellow-500/50 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isClaimProcessing ? "Claiming..." : "Claim Coins"}
-                  </button>
-                </div>
-
-                {/* Claimed Coins List */}
-                {claimedCoins.length > 0 && (
-                  <div className="mt-6 pt-6 border-t border-white/10">
-                    <h4 className="font-semibold text-white mb-4">Your Claimed Coins</h4>
-                    <div className="space-y-3">
-                      {claimedCoins.map((claim) => (
-                        <div
-                          key={claim.id}
-                          className="flex justify-between items-center p-3 rounded-lg bg-white/5 border border-white/10"
-                        >
-                          <div>
-                            <div className="font-semibold text-white">{claim.amount} GX</div>
-                            <div className="text-xs text-gray-400">Claimed: {claim.claimedAt}</div>
-                          </div>
-                          <div className="text-right">
-                            <div
-                              className={`text-sm font-semibold ${claim.status === "active" ? "text-green-400" : "text-gray-400"}`}
-                            >
-                              {claim.status === "active" ? "Active" : "Expired"}
-                            </div>
-                            <div className="text-xs text-gray-400">Expires: {claim.expiresAt}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+              <UserStatsCard />
+              <PriceHistoryChart />
             </div>
 
             {/* Right Column - History */}
