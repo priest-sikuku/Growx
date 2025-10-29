@@ -88,6 +88,22 @@ export default function SignUp() {
     }
 
     try {
+      let referrerId = null
+      if (formData.referralCode) {
+        const { data: referrerData, error: referrerError } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("referral_code", formData.referralCode)
+          .single()
+
+        if (referrerError || !referrerData) {
+          setError("Invalid referral code")
+          setLoading(false)
+          return
+        }
+        referrerId = referrerData.id
+      }
+
       const referralCode = `GX_${formData.username.toUpperCase()}_${Math.random().toString(36).substring(2, 8).toUpperCase()}`
 
       const { data, error: signUpError } = await supabase.auth.signUp({
@@ -105,19 +121,6 @@ export default function SignUp() {
       if (signUpError) throw signUpError
 
       if (data?.user) {
-        let referrerId = null
-        if (formData.referralCode) {
-          const { data: referrerData } = await supabase
-            .from("profiles")
-            .select("id")
-            .eq("referral_code", formData.referralCode)
-            .single()
-
-          if (referrerData) {
-            referrerId = referrerData.id
-          }
-        }
-
         const { error: profileError } = await supabase
           .from("profiles")
           .update({
@@ -134,18 +137,16 @@ export default function SignUp() {
             referrer_id: referrerId,
             referred_id: data.user.id,
             referral_code: formData.referralCode,
+            status: "active",
+            total_trading_commission: 0,
+            total_claim_commission: 0,
           })
 
-          if (referralError) console.error("Referral creation error:", referralError)
-
-          await supabase
-            .from("profiles")
-            .update({
-              total_referrals:
-                (await supabase.from("profiles").select("total_referrals").eq("id", referrerId)).data?.[0]
-                  ?.total_referrals + 1 || 1,
-            })
-            .eq("id", referrerId)
+          if (referralError) {
+            console.error("[v0] Referral creation error:", referralError)
+          } else {
+            console.log("[v0] Referral relationship created successfully")
+          }
         }
 
         router.push("/auth/sign-up-success")

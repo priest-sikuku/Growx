@@ -27,10 +27,7 @@ export default function MyOrders() {
       const {
         data: { user },
       } = await supabase.auth.getUser()
-      if (!user) {
-        console.log("[v0] No user found")
-        return
-      }
+      if (!user) return
 
       if (activeTab === "listings") {
         const { data, error } = await supabase
@@ -39,56 +36,21 @@ export default function MyOrders() {
           .eq("user_id", user.id)
           .order("created_at", { ascending: false })
 
-        if (error) {
-          console.error("[v0] Error fetching listings:", error)
-          throw error
-        }
-        console.log("[v0] Fetched listings:", data)
+        if (error) throw error
         setListings(data || [])
       } else {
-        const { data: tradesData, error: tradesError } = await supabase
+        const { data, error } = await supabase
           .from("trades")
-          .select("*")
+          .select(`
+            *,
+            buyer_profile:buyer_id (username),
+            seller_profile:seller_id (username)
+          `)
           .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
           .order("created_at", { ascending: false })
 
-        if (tradesError) {
-          console.error("[v0] Error fetching trades:", tradesError)
-          throw tradesError
-        }
-
-        console.log("[v0] Fetched trades:", tradesData)
-
-        if (tradesData && tradesData.length > 0) {
-          const userIds = [...new Set([...tradesData.map((t) => t.buyer_id), ...tradesData.map((t) => t.seller_id)])]
-
-          const { data: profilesData, error: profilesError } = await supabase
-            .from("profiles")
-            .select("id, username, rating, total_trades")
-            .in("id", userIds)
-
-          if (profilesError) {
-            console.error("[v0] Error fetching profiles:", profilesError)
-          }
-
-          const tradesWithProfiles = tradesData.map((trade) => {
-            const buyerProfile = profilesData?.find((p) => p.id === trade.buyer_id)
-            const sellerProfile = profilesData?.find((p) => p.id === trade.seller_id)
-            const otherProfile = trade.buyer_id === user.id ? sellerProfile : buyerProfile
-
-            return {
-              ...trade,
-              buyer_profile: buyerProfile,
-              seller_profile: sellerProfile,
-              other_user: otherProfile?.username || "Unknown",
-            }
-          })
-
-          console.log("[v0] Trades with profiles:", tradesWithProfiles)
-          setTrades(tradesWithProfiles)
-        } else {
-          setTrades([])
-        }
+        if (error) throw error
+        setTrades(data || [])
       }
     } catch (error) {
       console.error("[v0] Error fetching orders:", error)
@@ -240,7 +202,9 @@ export default function MyOrders() {
                     <div className="font-semibold text-white">
                       {trade.coin_amount} GX - KES {Number(trade.total_price).toFixed(2)}
                     </div>
-                    <div className="text-sm text-gray-400">With {trade.other_user}</div>
+                    <div className="text-sm text-gray-400">
+                      With {trade.buyer_profile?.username || trade.seller_profile?.username || "Unknown"}
+                    </div>
                     <div className="text-xs text-gray-500 mt-1">{trade.payment_method}</div>
                   </div>
                   <div className={`font-semibold ${getStatusColor(trade.status)}`}>

@@ -108,24 +108,15 @@ export default function Market() {
         coin_amount: amount,
         price_per_coin: selectedListing.price_per_coin,
         total_price: amount * selectedListing.price_per_coin,
-        payment_method: selectedListing.payment_methods?.[0] || "M-Pesa",
         status: "pending",
         escrow_amount: amount,
       }
 
-      console.log("[v0] Creating trade with data:", tradeData)
-
       const { data: trade, error: tradeError } = await supabase.from("trades").insert([tradeData]).select().single()
 
-      if (tradeError) {
-        console.error("[v0] Trade creation error:", tradeError)
-        throw tradeError
-      }
-
-      console.log("[v0] Trade created successfully:", trade)
+      if (tradeError) throw tradeError
 
       if (activeTab === "sell") {
-        console.log("[v0] Locking coins in escrow for seller")
         const { error: escrowError } = await supabase.from("coins").insert([
           {
             user_id: currentUserId,
@@ -136,19 +127,16 @@ export default function Market() {
           },
         ])
 
-        if (escrowError) {
-          console.error("[v0] Escrow error:", escrowError)
-          throw escrowError
-        }
+        if (escrowError) throw escrowError
       }
 
       alert("Trade created successfully!")
       setSelectedListing(null)
       setTradeAmount("")
       window.location.href = `/market/trade-status/${trade.id}`
-    } catch (error: any) {
+    } catch (error) {
       console.error("[v0] Error creating trade:", error)
-      alert(`Failed to create trade: ${error.message || "Please try again."}`)
+      alert("Failed to create trade. Please try again.")
     } finally {
       setIsCreatingTrade(false)
     }

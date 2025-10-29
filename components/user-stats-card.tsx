@@ -39,14 +39,43 @@ export function UserStatsCard() {
       } = await supabase.auth.getUser()
       if (!user) return
 
-      const { data, error } = await supabase.from("user_stats").select("*").eq("user_id", user.id).single()
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("total_referrals, total_commission, rating, total_trades")
+        .eq("id", user.id)
+        .single()
 
-      if (error) {
-        console.error("[v0] Error fetching user stats:", error)
+      if (profileError) {
+        console.error("[v0] Error fetching profile stats:", profileError)
         return
       }
 
-      setStats(data)
+      const { data: referralsData, error: referralsError } = await supabase
+        .from("referrals")
+        .select("id", { count: "exact" })
+        .eq("referrer_id", user.id)
+
+      if (referralsError) {
+        console.error("[v0] Error fetching referrals count:", referralsError)
+      }
+
+      const actualReferralCount = referralsData?.length ?? 0
+
+      const { data: statsData, error: statsError } = await supabase
+        .from("user_stats")
+        .select("total_roi")
+        .eq("user_id", user.id)
+        .single()
+
+      const combinedStats: UserStats = {
+        total_referrals: actualReferralCount,
+        commission_earned: profileData?.total_commission ?? 0,
+        rating: profileData?.rating ?? 0,
+        total_roi: statsData?.total_roi ?? 0,
+      }
+
+      console.log("[v0] User stats loaded:", combinedStats)
+      setStats(combinedStats)
     } catch (error) {
       console.error("[v0] Error:", error)
     } finally {
@@ -56,7 +85,7 @@ export function UserStatsCard() {
 
   const fetchSupply = async () => {
     try {
-      const { data, error } = await supabase.from("gx_supply").select("*").single()
+      const { data, error } = await supabase.from("supply_tracking").select("*").single()
 
       if (error) {
         console.error("[v0] Error fetching supply:", error)
@@ -119,7 +148,7 @@ export function UserStatsCard() {
             </div>
             <div>
               <p className="text-sm text-gray-400">Commission Earned</p>
-              <p className="text-xl font-bold">{(stats?.commission_earned ?? 0).toFixed(2)} KES</p>
+              <p className="text-xl font-bold">{(stats?.commission_earned ?? 0).toFixed(2)} GX</p>
             </div>
           </div>
         </div>

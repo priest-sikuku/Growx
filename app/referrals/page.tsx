@@ -51,23 +51,35 @@ export default function ReferralsPage() {
 
         setProfile(profileData)
 
-        // Fetch referrals
-        const { data: referralsData } = await supabase.from("referrals").select("*").eq("referrer_id", authUser.id)
+        const { data: referralsData, error: referralsError } = await supabase
+          .from("referrals")
+          .select("*")
+          .eq("referrer_id", authUser.id)
+          .order("created_at", { ascending: false })
 
-        setReferrals(referralsData || [])
+        if (referralsError) {
+          console.error("[v0] Error fetching referrals:", referralsError)
+        } else {
+          console.log("[v0] Fetched referrals:", referralsData?.length ?? 0)
+          setReferrals(referralsData || [])
+        }
 
         // Fetch referred users details
         if (referralsData && referralsData.length > 0) {
           const referredIds = referralsData.map((r) => r.referred_id)
-          const { data: usersData } = await supabase
+          const { data: usersData, error: usersError } = await supabase
             .from("profiles")
             .select("id, username, email")
             .in("id", referredIds)
 
-          setReferredUsers(usersData || [])
+          if (usersError) {
+            console.error("[v0] Error fetching referred users:", usersError)
+          } else {
+            setReferredUsers(usersData || [])
+          }
         }
       } catch (error) {
-        console.error("Error fetching referral data:", error)
+        console.error("[v0] Error fetching referral data:", error)
       } finally {
         setLoading(false)
       }
