@@ -1,22 +1,24 @@
--- Add referral tracking columns to profiles if not exists
-ALTER TABLE public.profiles 
-ADD COLUMN IF NOT EXISTS referred_by uuid REFERENCES auth.users(id),
-ADD COLUMN IF NOT EXISTS total_referrals integer DEFAULT 0,
-ADD COLUMN IF NOT EXISTS commission_earned numeric DEFAULT 0.00;
-
 -- Drop existing views before recreating to avoid column mismatch errors
 DROP VIEW IF EXISTS public.user_stats CASCADE;
 DROP VIEW IF EXISTS public.price_history_5days CASCADE;
+
+-- Ensure all required columns exist in profiles table
+ALTER TABLE public.profiles 
+ADD COLUMN IF NOT EXISTS referred_by uuid REFERENCES auth.users(id),
+ADD COLUMN IF NOT EXISTS total_referrals integer DEFAULT 0,
+ADD COLUMN IF NOT EXISTS commission_earned numeric DEFAULT 0.00,
+ADD COLUMN IF NOT EXISTS rating numeric(3, 2) DEFAULT 0.00,
+ADD COLUMN IF NOT EXISTS total_trades integer DEFAULT 0;
 
 -- Create a view for user statistics
 CREATE VIEW public.user_stats AS
 SELECT 
   p.id as user_id,
-  p.username,
-  p.rating,
-  p.total_trades,
-  p.total_referrals,
-  p.commission_earned,
+  COALESCE(p.username, 'Anonymous') as username,
+  COALESCE(p.rating, 0.00) as rating,
+  COALESCE(p.total_trades, 0) as total_trades,
+  COALESCE(p.total_referrals, 0) as total_referrals,
+  COALESCE(p.commission_earned, 0.00) as commission_earned,
   -- Calculate ROI from completed trades
   COALESCE(
     (SELECT 
@@ -41,7 +43,7 @@ RETURNS TRIGGER AS $$
 BEGIN
   IF NEW.referred_by IS NOT NULL THEN
     UPDATE profiles 
-    SET total_referrals = total_referrals + 1
+    SET total_referrals = COALESCE(total_referrals, 0) + 1
     WHERE id = NEW.referred_by;
   END IF;
   RETURN NEW;
@@ -54,25 +56,3 @@ CREATE TRIGGER on_referral_signup
   AFTER INSERT ON profiles
   FOR EACH ROW
   EXECUTE FUNCTION update_referral_count();
-
--- Create price history view only if gx_price_history table exists
-DO $$
-BEGIN
-  IF EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'gx_price_history') THEN
-    EXECUTE '
-      CREATE VIEW public.price_history_5days AS
-      SELECT 
-        DATE(created_at) as date,
-        AVG(price) as avg_price,
-        MIN(price) as min_price,
-        MAX(price) as max_price,
-        MAX(created_at) as last_updated
-      FROM gx_price_history
-      WHERE created_at >= NOW() - INTERVAL ''5 days''
-      GROUP BY DATE(created_at)
-      ORDER BY date DESC;
-      
-      GRANT SELECT ON public.price_history_5days TO authenticated;
-    ';
-  END IF;
-END $$;
