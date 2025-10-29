@@ -131,7 +131,7 @@ export default function MarketPage() {
     setCreating(true)
 
     try {
-      const isBuyingFromSeller = activeTab === "buy"
+      const isBuyingFromSeller = selectedListing.ad_type === "sell"
       const tradeData = {
         listing_id: selectedListing.id,
         buyer_id: isBuyingFromSeller ? currentUserId : selectedListing.user_id,
@@ -162,9 +162,10 @@ export default function MarketPage() {
         return
       }
 
-      console.log("[v0] Trade created successfully:", trade)
+      console.log("[v0] Trade created successfully with ID:", trade.id)
 
-      await new Promise((resolve) => setTimeout(resolve, 500))
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+
       router.push(`/market/trade/${trade.id}`)
     } catch (error: any) {
       console.error("[v0] Failed to initiate trade:", error)
@@ -364,7 +365,7 @@ export default function MarketPage() {
                   className="flex-1 py-3 rounded-lg bg-gradient-to-r from-green-500 to-green-600 text-black font-semibold hover:shadow-lg hover:shadow-green-500/50 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {creating
-                    ? "Creating..."
+                    ? "Creating Trade..."
                     : !isLoggedIn
                       ? "Login Required"
                       : activeTab === "buy"
