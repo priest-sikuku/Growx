@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { ArrowLeft, User, Clock } from "lucide-react"
+import { ArrowLeft, User, Clock, Star } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Header from "@/components/header"
 import Footer from "@/components/footer"
@@ -23,6 +23,7 @@ interface Ad {
   profiles: {
     username: string | null
     email: string | null
+    rating: number | null
   }
   remaining_amount?: number
   price_per_gx?: number
@@ -56,7 +57,8 @@ export default function SellGXPage() {
           *,
           profiles:user_id (
             username,
-            email
+            email,
+            rating
           )
         `)
         .eq("ad_type", "buy")
@@ -191,15 +193,21 @@ export default function SellGXPage() {
                           <div className="p-2 rounded-lg bg-red-500/10">
                             <User size={20} className="text-red-400" />
                           </div>
-                          <div>
-                            <span className="font-semibold text-white">
-                              {ad.profiles?.username || ad.profiles?.email || "Anonymous"}
-                            </span>
-                            {currentUserId === ad.user_id && (
-                              <span className="ml-2 text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded">
-                                Your Ad
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-white">
+                                {ad.profiles?.username || ad.profiles?.email || "Anonymous"}
                               </span>
-                            )}
+                              {currentUserId === ad.user_id && (
+                                <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded">Your Ad</span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1 mt-1">
+                              <Star size={14} className="text-yellow-400 fill-yellow-400" />
+                              <span className="text-sm text-gray-400">
+                                {ad.profiles?.rating ? Number(ad.profiles.rating).toFixed(1) : "No ratings"}
+                              </span>
+                            </div>
                           </div>
                         </div>
 

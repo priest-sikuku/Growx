@@ -4,7 +4,6 @@ import { useEffect, useState, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { ArrowLeft, User, CheckCircle, XCircle, Send } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import Header from "@/components/header"
@@ -332,7 +331,7 @@ export default function TradePage() {
             <p className="text-sm text-gray-400">Trade ID: {trade.id}</p>
           </div>
 
-          <Card className="p-6 glass-card border-white/10 mb-6">
+          <div className="glass-card p-8 rounded-xl border border-white/10 mb-6">
             <div className="grid md:grid-cols-2 gap-6">
               <div>
                 <h3 className="font-semibold mb-4">Trade Information</h3>
@@ -366,7 +365,7 @@ export default function TradePage() {
                     <div className="flex items-center gap-2">
                       <User size={16} className="text-green-400" />
                       <p className="font-semibold">{trade.buyer?.username || trade.buyer?.email || "Anonymous"}</p>
-                      {isBuyer && <Badge variant="outline">You</Badge>}
+                      {isBuyer && <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded">You</span>}
                     </div>
                   </div>
                   <div>
@@ -374,15 +373,15 @@ export default function TradePage() {
                     <div className="flex items-center gap-2">
                       <User size={16} className="text-red-400" />
                       <p className="font-semibold">{trade.seller?.username || trade.seller?.email || "Anonymous"}</p>
-                      {isSeller && <Badge variant="outline">You</Badge>}
+                      {isSeller && <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded">You</span>}
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-          </Card>
+          </div>
 
-          <Card className="p-6 glass-card border-white/10 mb-6">
+          <div className="glass-card p-8 rounded-xl border border-white/10 mb-6">
             <h3 className="font-semibold mb-4">Payment Details</h3>
             <div className="space-y-2">
               {getPaymentMethods().map((method, index) => (
@@ -397,9 +396,9 @@ export default function TradePage() {
                 <p className="text-sm">{trade.ad.terms_of_trade}</p>
               </div>
             )}
-          </Card>
+          </div>
 
-          <Card className="p-6 glass-card border-white/10 mb-6">
+          <div className="glass-card p-8 rounded-xl border border-white/10 mb-6">
             <h3 className="font-semibold mb-4">Trade Chat</h3>
             <div className="bg-black/20 rounded-lg p-4 h-64 overflow-y-auto mb-4">
               {messages.length === 0 ? (
@@ -432,28 +431,30 @@ export default function TradePage() {
                 onChange={(e) => setNewMessage(e.target.value)}
                 onKeyPress={(e) => e.key === "Enter" && sendMessage()}
                 disabled={sendingMessage || trade.status === "completed" || trade.status === "cancelled"}
+                className="bg-white/5 border-white/10"
               />
               <Button
                 onClick={sendMessage}
                 disabled={
                   sendingMessage || !newMessage.trim() || trade.status === "completed" || trade.status === "cancelled"
                 }
+                className="bg-gradient-to-r from-green-500 to-green-600 text-black hover:shadow-lg hover:shadow-green-500/50"
               >
                 <Send size={18} />
               </Button>
             </div>
-          </Card>
+          </div>
 
           {/* Action Buttons */}
           {trade.status !== "completed" && trade.status !== "cancelled" && (
-            <Card className="p-6 glass-card border-white/10">
+            <div className="glass-card p-8 rounded-xl border border-white/10">
               <h3 className="font-semibold mb-4">Actions</h3>
               <div className="flex flex-wrap gap-3">
                 {isBuyer && trade.status === "escrowed" && (
                   <Button
                     onClick={markPaymentSent}
                     disabled={actionLoading}
-                    className="btn-primary-gx hover:shadow-lg hover:shadow-green-500/50 transition"
+                    className="bg-gradient-to-r from-green-500 to-green-600 text-black hover:shadow-lg hover:shadow-green-500/50 transition"
                   >
                     <CheckCircle size={18} className="mr-2" />
                     {actionLoading ? "Processing..." : "I Have Paid"}
@@ -476,12 +477,12 @@ export default function TradePage() {
                   {actionLoading ? "Processing..." : "Cancel Trade"}
                 </Button>
               </div>
-            </Card>
+            </div>
           )}
 
           {/* Completed Message */}
           {trade.status === "completed" && (
-            <Card className="p-6 glass-card bg-green-500/10 border-green-500/20">
+            <div className="glass-card p-8 bg-green-500/10 border-green-500/20 rounded-xl">
               <div className="flex items-center gap-3">
                 <CheckCircle size={24} className="text-green-400" />
                 <div>
@@ -489,7 +490,7 @@ export default function TradePage() {
                   <p className="text-sm text-gray-400">Coins have been successfully transferred to the buyer.</p>
                 </div>
               </div>
-            </Card>
+            </div>
           )}
         </div>
       </main>

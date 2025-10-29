@@ -1,12 +1,13 @@
 "use client"
 
-import { TrendingUp, Users } from "lucide-react"
+import { Users, Wallet } from "lucide-react"
 import { GXPriceDisplay } from "./gx-price-display"
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 
 export function DashboardStats() {
   const [balance, setBalance] = useState(0)
+  const [availableBalance, setAvailableBalance] = useState(0)
   const [totalReferrals, setTotalReferrals] = useState(0)
 
   useEffect(() => {
@@ -22,6 +23,11 @@ export function DashboardStats() {
 
         if (profile) {
           setBalance(Number(profile.total_mined) || 0)
+        }
+
+        const { data: availBal } = await supabase.rpc("get_available_balance", { p_user_id: user.id })
+        if (availBal !== null) {
+          setAvailableBalance(Number(availBal) || 0)
         }
 
         // Fetch referrals count
@@ -52,13 +58,15 @@ export function DashboardStats() {
           <div>
             <p className="text-gray-400 text-sm mb-1">Total Balance</p>
             <p className="text-3xl font-bold text-white">{balance.toFixed(2)}</p>
-            <p className="text-xs text-gray-500 mt-1">GX Coins</p>
+            <p className="text-xs text-gray-500 mt-1">
+              Available: <span className="text-green-400 font-semibold">{availableBalance.toFixed(2)} GX</span>
+            </p>
           </div>
           <div className="p-3 bg-green-500/10 rounded-lg">
-            <TrendingUp className="w-6 h-6 text-green-400" />
+            <Wallet className="w-6 h-6 text-green-400" />
           </div>
         </div>
-        <div className="text-xs text-green-400">Available for trading</div>
+        <div className="text-xs text-green-400">GX Coins</div>
       </div>
 
       {/* Total Referrals Card */}
