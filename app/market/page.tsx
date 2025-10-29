@@ -101,6 +101,9 @@ export default function Market() {
 
     setIsCreatingTrade(true)
     try {
+      const expiresAt = new Date()
+      expiresAt.setMinutes(expiresAt.getMinutes() + 30)
+
       const tradeData = {
         listing_id: selectedListing.id,
         buyer_id: activeTab === "buy" ? currentUserId : selectedListing.user_id,
@@ -110,6 +113,7 @@ export default function Market() {
         total_price: amount * selectedListing.price_per_coin,
         status: "pending",
         escrow_amount: amount,
+        expires_at: expiresAt.toISOString(),
       }
 
       const { data: trade, error: tradeError } = await supabase.from("trades").insert([tradeData]).select().single()
@@ -130,10 +134,7 @@ export default function Market() {
         if (escrowError) throw escrowError
       }
 
-      alert("Trade created successfully!")
-      setSelectedListing(null)
-      setTradeAmount("")
-      window.location.href = `/market/trade-status/${trade.id}`
+      window.location.href = `/market/trade/${trade.id}`
     } catch (error) {
       console.error("[v0] Error creating trade:", error)
       alert("Failed to create trade. Please try again.")

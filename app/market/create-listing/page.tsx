@@ -102,6 +102,9 @@ export default function CreateListing() {
         return
       }
 
+      const expiresAt = new Date()
+      expiresAt.setDate(expiresAt.getDate() + 3)
+
       const listingData: any = {
         user_id: user.id,
         listing_type: listingType,
@@ -110,6 +113,7 @@ export default function CreateListing() {
         payment_methods: paymentMethods,
         terms: terms || null,
         status: "active",
+        expires_at: expiresAt.toISOString(),
       }
 
       if (listingType === "sell") {
@@ -127,7 +131,7 @@ export default function CreateListing() {
       }
 
       console.log("[v0] Listing created successfully:", data)
-      alert("Listing created successfully!")
+      alert("Listing created successfully! It will expire in 3 days.")
       router.push("/market")
     } catch (error: any) {
       console.error("[v0] Error creating listing:", error)
