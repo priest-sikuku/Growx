@@ -94,13 +94,20 @@ export default function TradePage({ params }: { params: { id: string } }) {
 
   async function fetchTradeData() {
     try {
+      console.log("[v0] Fetching trade with ID:", params.id)
+
       const { data: tradeData, error: tradeError } = await supabase
         .from("trades")
         .select("*")
         .eq("id", params.id)
         .single()
 
-      if (tradeError) throw tradeError
+      if (tradeError) {
+        console.error("[v0] Error fetching trade:", tradeError)
+        throw tradeError
+      }
+
+      console.log("[v0] Trade data fetched:", tradeData)
       setTrade(tradeData)
 
       const [listingRes, buyerRes, sellerRes, messagesRes] = await Promise.all([
@@ -110,12 +117,16 @@ export default function TradePage({ params }: { params: { id: string } }) {
         supabase.from("trade_messages").select("*").eq("trade_id", params.id).order("created_at", { ascending: true }),
       ])
 
+      if (listingRes.error) console.error("[v0] Error fetching listing:", listingRes.error)
+      if (buyerRes.error) console.error("[v0] Error fetching buyer:", buyerRes.error)
+      if (sellerRes.error) console.error("[v0] Error fetching seller:", sellerRes.error)
+
       setListing(listingRes.data)
       setBuyer(buyerRes.data)
       setSeller(sellerRes.data)
       setMessages(messagesRes.data || [])
     } catch (error) {
-      console.error("Error fetching trade:", error)
+      console.error("[v0] Error in fetchTradeData:", error)
     } finally {
       setLoading(false)
     }
@@ -125,16 +136,25 @@ export default function TradePage({ params }: { params: { id: string } }) {
     if (!newMessage.trim() || !currentUserId) return
 
     try {
-      await supabase.from("trade_messages").insert([
+      console.log("[v0] Sending message:", newMessage)
+
+      const { error } = await supabase.from("trade_messages").insert([
         {
           trade_id: params.id,
           sender_id: currentUserId,
           message: newMessage.trim(),
         },
       ])
+
+      if (error) {
+        console.error("[v0] Error sending message:", error)
+        throw error
+      }
+
       setNewMessage("")
     } catch (error) {
-      console.error("Error sending message:", error)
+      console.error("[v0] Failed to send message:", error)
+      alert("Failed to send message. Please try again.")
     }
   }
 
@@ -143,6 +163,8 @@ export default function TradePage({ params }: { params: { id: string } }) {
 
     setProcessing(true)
     try {
+      console.log("[v0] Marking trade as paid")
+
       const { error } = await supabase
         .from("trades")
         .update({
@@ -151,10 +173,14 @@ export default function TradePage({ params }: { params: { id: string } }) {
         })
         .eq("id", trade.id)
 
-      if (error) throw error
+      if (error) {
+        console.error("[v0] Error marking as paid:", error)
+        throw error
+      }
+
       alert("Payment marked! Waiting for seller to release coins.")
     } catch (error) {
-      console.error("Error marking payment:", error)
+      console.error("[v0] Failed to mark payment:", error)
       alert("Failed to mark payment. Please try again.")
     } finally {
       setProcessing(false)
@@ -166,6 +192,8 @@ export default function TradePage({ params }: { params: { id: string } }) {
 
     setProcessing(true)
     try {
+      console.log("[v0] Releasing coins")
+
       const { error } = await supabase
         .from("trades")
         .update({
@@ -174,11 +202,15 @@ export default function TradePage({ params }: { params: { id: string } }) {
         })
         .eq("id", trade.id)
 
-      if (error) throw error
+      if (error) {
+        console.error("[v0] Error releasing coins:", error)
+        throw error
+      }
+
       alert("Coins released! Trade completed successfully.")
       router.push("/market/my-orders")
     } catch (error) {
-      console.error("Error releasing coins:", error)
+      console.error("[v0] Failed to release coins:", error)
       alert("Failed to release coins. Please try again.")
     } finally {
       setProcessing(false)

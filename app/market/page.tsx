@@ -17,6 +17,7 @@ interface Listing {
   min_order_amount: number
   max_order_amount: number
   payment_methods: string[]
+  payment_details: any
   terms: string
   created_at: string
   profile?: {
@@ -103,7 +104,7 @@ export default function MarketPage() {
         setListings([])
       }
     } catch (error) {
-      console.error("Error fetching listings:", error)
+      console.error("[v0] Error fetching listings:", error)
       setListings([])
     } finally {
       setLoading(false)
@@ -139,13 +140,20 @@ export default function MarketPage() {
         expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
       }
 
+      console.log("[v0] Creating trade with data:", tradeData)
+
       const { data: trade, error } = await supabase.from("trades").insert([tradeData]).select().single()
 
-      if (error) throw error
+      if (error) {
+        console.error("[v0] Error creating trade:", error)
+        throw error
+      }
+
+      console.log("[v0] Trade created successfully:", trade)
 
       router.push(`/market/trade/${trade.id}`)
     } catch (error) {
-      console.error("Error creating trade:", error)
+      console.error("[v0] Failed to initiate trade:", error)
       alert("Failed to initiate trade. Please try again.")
     }
   }
@@ -159,12 +167,6 @@ export default function MarketPage() {
           <h1 className="text-3xl font-bold">P2P Marketplace</h1>
           {isLoggedIn && (
             <div className="flex gap-3">
-              <Link
-                href="/market/my-ads"
-                className="px-4 py-2 rounded-lg border border-green-500/30 text-green-400 hover:bg-green-500/10 transition"
-              >
-                My Ads
-              </Link>
               <Link
                 href="/market/my-orders"
                 className="px-4 py-2 rounded-lg border border-green-500/30 text-green-400 hover:bg-green-500/10 transition"
@@ -214,12 +216,14 @@ export default function MarketPage() {
         ) : listings.length === 0 ? (
           <div className="text-center py-12 bg-white/5 rounded-2xl">
             <p className="text-gray-400 mb-4">No ads available</p>
-            <Link
-              href="/market/create-ad"
-              className="inline-block px-6 py-2 rounded-lg bg-gradient-to-r from-green-500 to-green-600 text-black font-semibold hover:shadow-lg hover:shadow-green-500/50 transition"
-            >
-              Be the first to post an ad
-            </Link>
+            {isLoggedIn && (
+              <Link
+                href="/market/create-ad"
+                className="inline-block px-6 py-2 rounded-lg bg-gradient-to-r from-green-500 to-green-600 text-black font-semibold hover:shadow-lg hover:shadow-green-500/50 transition"
+              >
+                Be the first to post an ad
+              </Link>
+            )}
           </div>
         ) : (
           <div className="space-y-3">
@@ -330,17 +334,20 @@ export default function MarketPage() {
 
               <div className="flex gap-3">
                 <button
-                  onClick={() => setSelectedListing(null)}
+                  onClick={() => {
+                    setSelectedListing(null)
+                    setTradeAmount("")
+                  }}
                   className="flex-1 py-3 rounded-lg bg-white/5 hover:bg-white/10 transition"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleInitiateTrade}
-                  disabled={!tradeAmount}
+                  disabled={!tradeAmount || !isLoggedIn}
                   className="flex-1 py-3 rounded-lg bg-gradient-to-r from-green-500 to-green-600 text-black font-semibold hover:shadow-lg hover:shadow-green-500/50 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {activeTab === "buy" ? "Buy Now" : "Sell Now"}
+                  {!isLoggedIn ? "Login Required" : activeTab === "buy" ? "Buy Now" : "Sell Now"}
                 </button>
               </div>
             </div>
