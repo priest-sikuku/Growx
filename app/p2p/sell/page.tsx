@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react"
 import { ArrowLeft, User, Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
 import Header from "@/components/header"
 import Footer from "@/components/footer"
 import { createClient } from "@/lib/supabase/client"
@@ -126,7 +125,7 @@ export default function SellGXPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1">
         <div className="max-w-7xl mx-auto px-6 py-12">
@@ -139,79 +138,117 @@ export default function SellGXPage() {
             <p className="text-gray-400">Browse available buy offers and sell GX to other users</p>
           </div>
 
-          {loading ? (
-            <div className="text-center py-12">
-              <p className="text-gray-400">Loading ads...</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="glass-card p-8 rounded-xl border border-white/10">
+              <div className="text-center">
+                <div className="text-5xl font-bold text-red-400 mb-2">{ads.length}</div>
+                <p className="text-gray-400">Available Ads</p>
+              </div>
             </div>
-          ) : ads.length === 0 ? (
-            <div className="glass-card border border-white/10 rounded-xl p-12 text-center">
-              <p className="text-gray-400">No buy ads available at the moment</p>
+            <div className="glass-card p-8 rounded-xl border border-white/10">
+              <div className="text-center">
+                <div className="text-5xl font-bold text-purple-400 mb-2">
+                  {ads.reduce((sum, ad) => sum + ad.gx_amount, 0).toFixed(2)}
+                </div>
+                <p className="text-gray-400">Total GX Wanted</p>
+              </div>
             </div>
-          ) : (
-            <div className="grid gap-4">
-              {ads.map((ad) => (
-                <Card key={ad.id} className="p-6 glass-card border-white/10 hover:bg-white/5 transition">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-3">
-                        <User size={20} className="text-red-400" />
-                        <span className="font-semibold">
-                          {ad.profiles?.username || ad.profiles?.email || "Anonymous"}
-                        </span>
-                        {currentUserId === ad.user_id && (
-                          <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded">Your Ad</span>
+            <div className="glass-card p-8 rounded-xl border border-white/10">
+              <div className="text-center">
+                <div className="text-5xl font-bold text-yellow-400 mb-2">
+                  {ads.length > 0 ? (ads.reduce((sum, ad) => sum + ad.gx_amount, 0) / ads.length).toFixed(2) : "0"}
+                </div>
+                <p className="text-gray-400">Avg. Amount</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="glass-card p-8 rounded-xl border border-white/10">
+            <h2 className="text-2xl font-bold mb-6">Available Buy Offers</h2>
+
+            {loading ? (
+              <div className="text-center py-12">
+                <p className="text-gray-400">Loading ads...</p>
+              </div>
+            ) : ads.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-400 mb-4">No buy ads available at the moment</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {ads.map((ad) => (
+                  <div
+                    key={ad.id}
+                    className="p-4 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition"
+                  >
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="p-2 rounded-lg bg-red-500/10">
+                            <User size={20} className="text-red-400" />
+                          </div>
+                          <div>
+                            <span className="font-semibold text-white">
+                              {ad.profiles?.username || ad.profiles?.email || "Anonymous"}
+                            </span>
+                            {currentUserId === ad.user_id && (
+                              <span className="ml-2 text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded">
+                                Your Ad
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 mb-3">
+                          <div>
+                            <p className="text-sm text-gray-400">Amount</p>
+                            <p className="font-bold text-lg text-red-400">{ad.gx_amount} GX</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-400">Limit</p>
+                            <p className="font-semibold text-white">
+                              {ad.min_amount} - {ad.max_amount} GX
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="mb-3">
+                          <p className="text-sm text-gray-400">Payment Methods</p>
+                          <p className="text-sm text-white">{getPaymentMethods(ad)}</p>
+                        </div>
+
+                        {ad.terms_of_trade && (
+                          <div className="mb-3">
+                            <p className="text-sm text-gray-400">Terms</p>
+                            <p className="text-sm text-gray-300 italic">"{ad.terms_of_trade}"</p>
+                          </div>
                         )}
-                      </div>
 
-                      <div className="grid grid-cols-2 gap-4 mb-3">
-                        <div>
-                          <p className="text-sm text-gray-400">Amount</p>
-                          <p className="font-semibold text-red-400">{ad.gx_amount} GX</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-400">Limit</p>
-                          <p className="font-semibold">
-                            {ad.min_amount} - {ad.max_amount} GX
-                          </p>
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <Clock size={14} />
+                          <span>Posted {new Date(ad.created_at).toLocaleDateString()}</span>
                         </div>
                       </div>
 
-                      <div className="mb-3">
-                        <p className="text-sm text-gray-400">Payment Methods</p>
-                        <p className="text-sm">{getPaymentMethods(ad)}</p>
+                      <div>
+                        <Button
+                          className="px-6 py-3 rounded-lg bg-gradient-to-r from-red-600 to-red-700 text-white font-semibold hover:shadow-lg hover:shadow-red-500/50 transition"
+                          onClick={() => initiateTrade(ad)}
+                          disabled={initiatingTrade === ad.id || currentUserId === ad.user_id}
+                        >
+                          {currentUserId === ad.user_id
+                            ? "Your Ad"
+                            : initiatingTrade === ad.id
+                              ? "Initiating..."
+                              : "Sell Now"}
+                        </Button>
                       </div>
-
-                      {ad.terms_of_trade && (
-                        <div>
-                          <p className="text-sm text-gray-400">Terms</p>
-                          <p className="text-sm">{ad.terms_of_trade}</p>
-                        </div>
-                      )}
-
-                      <div className="flex items-center gap-2 mt-3 text-xs text-gray-500">
-                        <Clock size={14} />
-                        <span>Posted {new Date(ad.created_at).toLocaleDateString()}</span>
-                      </div>
-                    </div>
-
-                    <div>
-                      <Button
-                        className="bg-gradient-to-r from-red-600 to-red-700 hover:shadow-lg hover:shadow-red-500/50 transition text-white"
-                        onClick={() => initiateTrade(ad)}
-                        disabled={initiatingTrade === ad.id || currentUserId === ad.user_id}
-                      >
-                        {currentUserId === ad.user_id
-                          ? "Your Ad"
-                          : initiatingTrade === ad.id
-                            ? "Initiating..."
-                            : "Sell Now"}
-                      </Button>
                     </div>
                   </div>
-                </Card>
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </main>
       <Footer />

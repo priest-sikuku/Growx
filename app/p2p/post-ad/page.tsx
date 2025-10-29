@@ -88,7 +88,7 @@ export default function PostAdPage() {
       <Header />
       <main className="flex-1">
         <div className="max-w-3xl mx-auto px-6 py-12">
-          <Button variant="ghost" className="mb-6 hover:bg-white/10 transition" onClick={() => router.push("/p2p")}>
+          <Button variant="ghost" className="mb-6 hover:bg-white/5 transition" onClick={() => router.push("/p2p")}>
             <ArrowLeft size={20} className="mr-2" />
             Back to P2P Market
           </Button>
@@ -98,7 +98,7 @@ export default function PostAdPage() {
             <p className="text-gray-400">Create a buy or sell ad for GX coins</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="glass-card border border-white/10 rounded-xl p-8 space-y-6">
+          <form onSubmit={handleSubmit} className="glass-card p-8 rounded-xl border border-white/10 space-y-6">
             {/* Ad Type Selection */}
             <div className="space-y-3">
               <Label className="text-base font-semibold">Ad Type</Label>
@@ -238,6 +238,16 @@ export default function PostAdPage() {
               {loading ? "Posting Ad..." : "Post Ad"}
             </Button>
           </form>
+
+          <div className="mt-8 glass-card p-8 rounded-xl border border-blue-500/30 bg-blue-500/10">
+            <h3 className="font-bold text-white mb-4">Tips for Creating Successful Ads</h3>
+            <ul className="space-y-2 text-sm text-gray-300">
+              <li>Set competitive prices to attract more traders</li>
+              <li>Provide multiple payment methods for flexibility</li>
+              <li>Write clear terms to avoid misunderstandings</li>
+              <li>Respond quickly to trade requests for better ratings</li>
+            </ul>
+          </div>
         </div>
       </main>
       <Footer />

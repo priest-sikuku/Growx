@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation"
 import Header from "@/components/header"
 import Footer from "@/components/footer"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowLeft, Clock, CheckCircle, XCircle, Loader2 } from "lucide-react"
@@ -145,9 +144,9 @@ export default function MyTrades() {
     const role = isBuyer ? "Buyer" : "Seller"
 
     return (
-      <Card
+      <div
         key={trade.id}
-        className="p-4 hover:bg-white/5 cursor-pointer transition-colors"
+        className="p-4 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition cursor-pointer"
         onClick={() => router.push(`/p2p/trade/${trade.id}`)}
       >
         <div className="flex items-start justify-between mb-3">
@@ -181,7 +180,7 @@ export default function MyTrades() {
             <p className="text-xs text-yellow-500">⏱ Expires: {new Date(trade.expires_at).toLocaleString()}</p>
           </div>
         )}
-      </Card>
+      </div>
     )
   }
 
@@ -204,12 +203,12 @@ export default function MyTrades() {
   const expiredTrades = filterTradesByStatus("expired")
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1">
         <div className="max-w-7xl mx-auto px-6 py-12">
           <div className="mb-8">
-            <Button variant="ghost" size="sm" className="mb-4 hover:bg-white/5" onClick={() => router.push("/p2p")}>
+            <Button variant="ghost" className="mb-4 hover:bg-white/5" onClick={() => router.push("/p2p")}>
               <ArrowLeft size={16} className="mr-2" />
               Back to P2P Market
             </Button>
@@ -217,32 +216,31 @@ export default function MyTrades() {
             <p className="text-gray-400">View and manage all your P2P trades</p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-            <Card className="p-4 glass-card border-white/10">
-              <p className="text-sm text-gray-400 mb-1">Total</p>
-              <p className="text-2xl font-bold">{trades.length}</p>
-            </Card>
-            <Card className="p-4 glass-card border-white/10">
-              <p className="text-sm text-gray-400 mb-1">Pending</p>
-              <p className="text-2xl font-bold text-yellow-500">{pendingTrades.length}</p>
-            </Card>
-            <Card className="p-4 glass-card border-white/10">
-              <p className="text-sm text-gray-400 mb-1">Payment Sent</p>
-              <p className="text-2xl font-bold text-blue-500">{paymentSentTrades.length}</p>
-            </Card>
-            <Card className="p-4 glass-card border-white/10">
-              <p className="text-sm text-gray-400 mb-1">Completed</p>
-              <p className="text-2xl font-bold text-green-500">{completedTrades.length}</p>
-            </Card>
-            <Card className="p-4 glass-card border-white/10">
-              <p className="text-sm text-gray-400 mb-1">Cancelled</p>
-              <p className="text-2xl font-bold text-red-500">{cancelledTrades.length + expiredTrades.length}</p>
-            </Card>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-6 mb-8">
+            <div className="glass-card p-6 rounded-xl border border-white/10">
+              <p className="text-gray-400 text-sm mb-2">Total Trades</p>
+              <p className="text-3xl font-bold text-white">{trades.length}</p>
+            </div>
+            <div className="glass-card p-6 rounded-xl border border-white/10">
+              <p className="text-gray-400 text-sm mb-2">Pending</p>
+              <p className="text-3xl font-bold text-yellow-400">{pendingTrades.length}</p>
+            </div>
+            <div className="glass-card p-6 rounded-xl border border-white/10">
+              <p className="text-gray-400 text-sm mb-2">Payment Sent</p>
+              <p className="text-3xl font-bold text-blue-400">{paymentSentTrades.length}</p>
+            </div>
+            <div className="glass-card p-6 rounded-xl border border-white/10">
+              <p className="text-gray-400 text-sm mb-2">Completed</p>
+              <p className="text-3xl font-bold text-green-400">{completedTrades.length}</p>
+            </div>
+            <div className="glass-card p-6 rounded-xl border border-white/10">
+              <p className="text-gray-400 text-sm mb-2">Cancelled</p>
+              <p className="text-3xl font-bold text-red-400">{cancelledTrades.length + expiredTrades.length}</p>
+            </div>
           </div>
 
-          {/* Trades List with Tabs */}
           <Tabs defaultValue="all" className="w-full">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="mb-6 bg-white/5 border border-white/10">
               <TabsTrigger value="all">All</TabsTrigger>
               <TabsTrigger value="pending">Pending</TabsTrigger>
               <TabsTrigger value="payment_sent">Payment Sent</TabsTrigger>
@@ -251,63 +249,69 @@ export default function MyTrades() {
               <TabsTrigger value="expired">Expired</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="all" className="space-y-4 mt-6">
+            <TabsContent value="all" className="glass-card p-8 rounded-xl border border-white/10">
+              <h2 className="text-2xl font-bold mb-6">All Trades</h2>
               {trades.length === 0 ? (
-                <Card className="p-8 text-center glass-card border-white/10">
+                <div className="text-center py-12">
                   <p className="text-gray-400">No trades yet</p>
-                </Card>
+                </div>
               ) : (
-                trades.map(renderTradeCard)
+                <div className="space-y-4">{trades.map((trade) => renderTradeCard(trade))}</div>
               )}
             </TabsContent>
 
-            <TabsContent value="pending" className="space-y-4 mt-6">
+            <TabsContent value="pending" className="glass-card p-8 rounded-xl border border-white/10">
+              <h2 className="text-2xl font-bold mb-6">Pending Trades</h2>
               {pendingTrades.length === 0 ? (
-                <Card className="p-8 text-center">
+                <div className="text-center py-12">
                   <p className="text-gray-400">No pending trades</p>
-                </Card>
+                </div>
               ) : (
-                pendingTrades.map(renderTradeCard)
+                <div className="space-y-4">{pendingTrades.map((trade) => renderTradeCard(trade))}</div>
               )}
             </TabsContent>
 
-            <TabsContent value="payment_sent" className="space-y-4 mt-6">
+            <TabsContent value="payment_sent" className="glass-card p-8 rounded-xl border border-white/10">
+              <h2 className="text-2xl font-bold mb-6">Payment Sent Trades</h2>
               {paymentSentTrades.length === 0 ? (
-                <Card className="p-8 text-center">
+                <div className="text-center py-12">
                   <p className="text-gray-400">No trades with payment sent</p>
-                </Card>
+                </div>
               ) : (
-                paymentSentTrades.map(renderTradeCard)
+                <div className="space-y-4">{paymentSentTrades.map((trade) => renderTradeCard(trade))}</div>
               )}
             </TabsContent>
 
-            <TabsContent value="completed" className="space-y-4 mt-6">
+            <TabsContent value="completed" className="glass-card p-8 rounded-xl border border-white/10">
+              <h2 className="text-2xl font-bold mb-6">Completed Trades</h2>
               {completedTrades.length === 0 ? (
-                <Card className="p-8 text-center">
+                <div className="text-center py-12">
                   <p className="text-gray-400">No completed trades</p>
-                </Card>
+                </div>
               ) : (
-                completedTrades.map(renderTradeCard)
+                <div className="space-y-4">{completedTrades.map((trade) => renderTradeCard(trade))}</div>
               )}
             </TabsContent>
 
-            <TabsContent value="cancelled" className="space-y-4 mt-6">
+            <TabsContent value="cancelled" className="glass-card p-8 rounded-xl border border-white/10">
+              <h2 className="text-2xl font-bold mb-6">Cancelled Trades</h2>
               {cancelledTrades.length === 0 ? (
-                <Card className="p-8 text-center">
+                <div className="text-center py-12">
                   <p className="text-gray-400">No cancelled trades</p>
-                </Card>
+                </div>
               ) : (
-                cancelledTrades.map(renderTradeCard)
+                <div className="space-y-4">{cancelledTrades.map((trade) => renderTradeCard(trade))}</div>
               )}
             </TabsContent>
 
-            <TabsContent value="expired" className="space-y-4 mt-6">
+            <TabsContent value="expired" className="glass-card p-8 rounded-xl border border-white/10">
+              <h2 className="text-2xl font-bold mb-6">Expired Trades</h2>
               {expiredTrades.length === 0 ? (
-                <Card className="p-8 text-center">
+                <div className="text-center py-12">
                   <p className="text-gray-400">No expired trades</p>
-                </Card>
+                </div>
               ) : (
-                expiredTrades.map(renderTradeCard)
+                <div className="space-y-4">{expiredTrades.map((trade) => renderTradeCard(trade))}</div>
               )}
             </TabsContent>
           </Tabs>
