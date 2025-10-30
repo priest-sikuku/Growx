@@ -347,7 +347,7 @@ export default function TradePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col bg-background">
+      <div className="min-h-screen flex flex-col bg-black">
         <Header />
         <main className="flex-1 flex items-center justify-center">
           <p className="text-gray-400">Loading trade...</p>
@@ -359,7 +359,7 @@ export default function TradePage() {
 
   if (!trade) {
     return (
-      <div className="min-h-screen flex flex-col bg-background">
+      <div className="min-h-screen flex flex-col bg-black">
         <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
@@ -373,7 +373,7 @@ export default function TradePage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-black">
       <Header />
       <main className="flex-1">
         <div className="max-w-7xl mx-auto px-6 py-12">
