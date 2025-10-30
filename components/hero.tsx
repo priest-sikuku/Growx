@@ -47,7 +47,7 @@ export default function Hero() {
           <div className="glass-card p-8 rounded-2xl border border-white/5">
             <h1 className="text-4xl md:text-5xl font-bold mb-4">GrowX — The Coin That Never Sleeps</h1>
             <p className="text-gray-400 text-lg leading-relaxed mb-6">
-              Earn <strong className="text-white">3% daily</strong> and mine every{" "}
+              Trade <strong className="text-white">daily</strong> and mine every{" "}
               <strong className="text-white">2 hours</strong>. Trade peer‑to‑peer across Kenya and beyond. Built for
               continuous growth and community.
             </p>
