@@ -101,12 +101,12 @@ export function MiningProvider({ children }: { children: React.ReactNode }) {
     if (!userId) return
 
     const updateTimer = async () => {
-      const { data: profile } = await supabase.from("profiles").select("next_claim_time").eq("id", userId).single()
+      const { data: profile } = await supabase.from("profiles").select("next_mine_at").eq("id", userId).single()
 
-      if (profile?.next_claim_time) {
-        const nextClaimDate = new Date(profile.next_claim_time)
+      if (profile?.next_mine_at) {
+        const nextMineDate = new Date(profile.next_mine_at)
         const now = new Date()
-        const diffInSeconds = Math.max(0, Math.floor((nextClaimDate.getTime() - now.getTime()) / 1000))
+        const diffInSeconds = Math.max(0, Math.floor((nextMineDate.getTime() - now.getTime()) / 1000))
         setNextMineTime(diffInSeconds)
       } else {
         setNextMineTime(0)
@@ -144,7 +144,7 @@ export function MiningProvider({ children }: { children: React.ReactNode }) {
 
         const { data: profile } = await supabase
           .from("profiles")
-          .select("rating, total_trades, referral_code, total_mined, mining_streak, next_claim_time")
+          .select("rating, total_mined, mining_streak, next_mine_at, last_mined_at")
           .eq("id", uid)
           .single()
 
@@ -250,8 +250,12 @@ export function MiningProvider({ children }: { children: React.ReactNode }) {
 
         console.log("[v0] Mining successful:", result.message)
 
-        setNextMineTime(10800) // 3 hours in seconds
-        setBalance((prev) => prev + reward)
+        const nextMineDate = new Date(result.next_mine_time)
+        const now = new Date()
+        const diffInSeconds = Math.max(0, Math.floor((nextMineDate.getTime() - now.getTime()) / 1000))
+
+        setNextMineTime(diffInSeconds)
+        setBalance(Number(result.new_balance))
         setTotalMined((prev) => prev + reward)
         setMiningStreak((prev) => prev + 1)
 
