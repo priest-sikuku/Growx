@@ -2,10 +2,12 @@
 
 import { useEffect, useState, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { ArrowLeft, User, CheckCircle, XCircle, Send } from "lucide-react"
+import { ArrowLeft, User, CheckCircle, XCircle, Send, Star } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
 import Header from "@/components/header"
 import Footer from "@/components/footer"
 import { createClient } from "@/lib/supabase/client"
@@ -60,10 +62,17 @@ export default function TradePage() {
   const [sendingMessage, setSendingMessage] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
+  const [showRatingForm, setShowRatingForm] = useState(false)
+  const [rating, setRating] = useState(0)
+  const [ratingComment, setRatingComment] = useState("")
+  const [submittingRating, setSubmittingRating] = useState(false)
+  const [existingRating, setExistingRating] = useState<any>(null)
+
   useEffect(() => {
     fetchTrade()
     getCurrentUser()
     fetchMessages()
+    checkExistingRating()
     const unsubscribe = subscribeToMessages()
     return () => {
       unsubscribe()
@@ -257,6 +266,56 @@ export default function TradePage() {
     }
   }
 
+  async function checkExistingRating() {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) return
+
+    const { data } = await supabase
+      .from("p2p_ratings")
+      .select("*")
+      .eq("trade_id", params.id)
+      .eq("rater_id", user.id)
+      .single()
+
+    if (data) {
+      setExistingRating(data)
+    }
+  }
+
+  async function submitRating() {
+    if (!trade || !currentUserId || rating === 0) return
+
+    try {
+      setSubmittingRating(true)
+      const ratedUserId = currentUserId === trade.buyer_id ? trade.seller_id : trade.buyer_id
+
+      const { error } = await supabase.from("p2p_ratings").insert({
+        trade_id: trade.id,
+        rater_id: currentUserId,
+        rated_user_id: ratedUserId,
+        rating: rating,
+        comment: ratingComment.trim() || null,
+      })
+
+      if (error) {
+        alert(error.message || "Failed to submit rating")
+        return
+      }
+
+      alert("Rating submitted successfully!")
+      setShowRatingForm(false)
+      checkExistingRating()
+    } catch (error) {
+      console.error("[v0] Error:", error)
+      alert("Failed to submit rating")
+    } finally {
+      setSubmittingRating(false)
+    }
+  }
+
   function getStatusBadge(status: string) {
     const statusConfig: Record<
       string,
@@ -438,7 +497,7 @@ export default function TradePage() {
                 disabled={
                   sendingMessage || !newMessage.trim() || trade.status === "completed" || trade.status === "cancelled"
                 }
-                className="bg-gradient-to-r from-green-500 to-green-600 text-black hover:shadow-lg hover:shadow-green-500/50"
+                className="bg-gradient-to-r from-green-500 to-green-600 text-black hover:shadow-lg hover:shadow-green-500/50 transition"
               >
                 <Send size={18} />
               </Button>
@@ -490,6 +549,81 @@ export default function TradePage() {
                   <p className="text-sm text-gray-400">Coins have been successfully transferred to the buyer.</p>
                 </div>
               </div>
+            </div>
+          )}
+
+          {trade.status === "completed" && !existingRating && (
+            <div className="glass-card p-8 rounded-xl border border-white/10 mb-6">
+              <h3 className="font-semibold mb-4">Rate this Trade</h3>
+              {!showRatingForm ? (
+                <Button
+                  onClick={() => setShowRatingForm(true)}
+                  className="bg-gradient-to-r from-yellow-500 to-yellow-600 text-black hover:shadow-lg hover:shadow-yellow-500/50"
+                >
+                  <Star size={18} className="mr-2" />
+                  Rate {isBuyer ? "Seller" : "Buyer"}
+                </Button>
+              ) : (
+                <div className="space-y-4">
+                  <div>
+                    <Label>Rating *</Label>
+                    <div className="flex gap-2 mt-2">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => setRating(star)}
+                          className="transition-transform hover:scale-110"
+                        >
+                          <Star
+                            size={32}
+                            className={star <= rating ? "fill-yellow-400 text-yellow-400" : "text-gray-600"}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="ratingComment">Comment (Optional)</Label>
+                    <Textarea
+                      id="ratingComment"
+                      placeholder="Share your experience with this trader..."
+                      rows={3}
+                      value={ratingComment}
+                      onChange={(e) => setRatingComment(e.target.value)}
+                      className="bg-white/5 border-white/10"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={submitRating}
+                      disabled={submittingRating || rating === 0}
+                      className="bg-gradient-to-r from-green-500 to-green-600 text-black hover:shadow-lg hover:shadow-green-500/50"
+                    >
+                      {submittingRating ? "Submitting..." : "Submit Rating"}
+                    </Button>
+                    <Button variant="outline" onClick={() => setShowRatingForm(false)}>
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {existingRating && (
+            <div className="glass-card p-8 rounded-xl border border-green-500/30 bg-green-500/10 mb-6">
+              <h3 className="font-semibold mb-2 text-green-400">You rated this trade</h3>
+              <div className="flex gap-1 mb-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Star
+                    key={star}
+                    size={20}
+                    className={star <= existingRating.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-600"}
+                  />
+                ))}
+              </div>
+              {existingRating.comment && <p className="text-sm text-gray-300">{existingRating.comment}</p>}
             </div>
           )}
         </div>

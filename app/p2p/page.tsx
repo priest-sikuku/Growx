@@ -1,13 +1,37 @@
 "use client"
 
-import { ArrowLeftRight, Plus, History, FileText } from "lucide-react"
+import { ArrowLeftRight, Plus, History, FileText, Wallet } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Header from "@/components/header"
 import Footer from "@/components/footer"
 import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
+import { createClient } from "@/lib/supabase/client"
 
 export default function P2PMarket() {
   const router = useRouter()
+  const [availableBalance, setAvailableBalance] = useState<number | null>(null)
+
+  useEffect(() => {
+    fetchAvailableBalance()
+    const interval = setInterval(fetchAvailableBalance, 5000)
+    return () => clearInterval(interval)
+  }, [])
+
+  async function fetchAvailableBalance() {
+    const supabase = createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) return
+
+    const { data, error } = await supabase.rpc("get_available_balance", { user_id: user.id })
+
+    if (!error && data !== null) {
+      setAvailableBalance(data)
+    }
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -23,35 +47,49 @@ export default function P2PMarket() {
           </div>
 
           <div className="glass-card border border-white/10 rounded-xl p-8">
-            {/* My Trades Button - Small button above the main actions */}
-            <div className="flex justify-end gap-2 mb-6">
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2 bg-white/5 border-white/10 hover:bg-white/10 transition"
-                onClick={() => {
-                  router.push("/p2p/my-ads")
-                }}
-              >
-                <FileText size={16} />
-                My Ads
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2 bg-white/5 border-white/10 hover:bg-white/10 transition"
-                onClick={() => {
-                  router.push("/p2p/my-trades")
-                }}
-              >
-                <History size={16} />
-                My Trades
-              </Button>
+            <div className="flex justify-between items-center mb-6">
+              {/* Available Balance - Small button on the left */}
+              {availableBalance !== null && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 bg-green-500/10 border-green-500/30 hover:bg-green-500/20 transition text-green-400"
+                >
+                  <Wallet size={16} />
+                  <span className="font-semibold">{availableBalance.toFixed(2)} GX</span>
+                  <span className="text-xs opacity-70">Available</span>
+                </Button>
+              )}
+
+              {/* My Ads and My Trades buttons on the right */}
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 bg-white/5 border-white/10 hover:bg-white/10 transition"
+                  onClick={() => {
+                    router.push("/p2p/my-ads")
+                  }}
+                >
+                  <FileText size={16} />
+                  My Ads
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 bg-white/5 border-white/10 hover:bg-white/10 transition"
+                  onClick={() => {
+                    router.push("/p2p/my-trades")
+                  }}
+                >
+                  <History size={16} />
+                  My Trades
+                </Button>
+              </div>
             </div>
 
             {/* Main Action Buttons - Horizontally aligned */}
             <div className="flex gap-3">
-              {/* BUY GX Button */}
               <Button
                 className="flex-1 h-16 text-sm font-semibold bg-gradient-to-r from-green-500 to-green-600 text-black hover:shadow-lg hover:shadow-green-500/50 transition"
                 onClick={() => router.push("/p2p/buy")}
@@ -62,7 +100,6 @@ export default function P2PMarket() {
                 </div>
               </Button>
 
-              {/* SELL GX Button */}
               <Button
                 className="flex-1 h-16 text-sm font-semibold bg-gradient-to-r from-red-600 to-red-700 hover:shadow-lg hover:shadow-red-500/50 transition text-white"
                 onClick={() => router.push("/p2p/sell")}
@@ -73,7 +110,6 @@ export default function P2PMarket() {
                 </div>
               </Button>
 
-              {/* POST AD Button */}
               <Button
                 className="flex-1 h-16 text-sm font-semibold bg-gradient-to-r from-blue-600 to-blue-700 hover:shadow-lg hover:shadow-blue-500/50 transition text-white"
                 onClick={() => router.push("/p2p/post-ad")}
@@ -85,7 +121,6 @@ export default function P2PMarket() {
               </Button>
             </div>
 
-            {/* Info Section */}
             <div className="mt-8 pt-8 border-t border-white/10">
               <h3 className="text-lg font-semibold mb-4">How P2P Trading Works</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">

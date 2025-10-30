@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
 import Header from "@/components/header"
 import Footer from "@/components/footer"
 import { ArrowLeft } from "lucide-react"
@@ -26,10 +26,14 @@ export default function PostAdPage() {
     minAmount: "",
     maxAmount: "",
     accountNumber: "",
-    mpesaNumber: "",
-    paybillNumber: "",
-    airtelMoney: "",
     termsOfTrade: "",
+  })
+
+  const [paymentMethods, setPaymentMethods] = useState({
+    mpesa: false,
+    bankTransfer: false,
+    paybill: false,
+    airtelMoney: false,
   })
 
   useEffect(() => {
@@ -39,7 +43,6 @@ export default function PostAdPage() {
 
       if (!error && data) {
         setCurrentGXPrice(data.price)
-        // Set default price to current price
         setFormData((prev) => ({ ...prev, pricePerGX: data.price.toString() }))
       }
     }
@@ -70,7 +73,6 @@ export default function PostAdPage() {
         return
       }
 
-      // Get current user
       const {
         data: { user },
       } = await supabase.auth.getUser()
@@ -81,6 +83,14 @@ export default function PostAdPage() {
         return
       }
 
+      const selectedPaymentMethods = []
+      if (paymentMethods.mpesa) selectedPaymentMethods.push("M-Pesa")
+      if (paymentMethods.bankTransfer) selectedPaymentMethods.push("Bank Transfer")
+      if (paymentMethods.paybill) selectedPaymentMethods.push("M-Pesa Paybill")
+      if (paymentMethods.airtelMoney) selectedPaymentMethods.push("Airtel Money")
+
+      const paymentMethodsString = selectedPaymentMethods.join(", ")
+
       if (adType === "sell") {
         const { data, error } = await supabase.rpc("post_sell_ad_with_escrow", {
           p_user_id: user.id,
@@ -89,9 +99,9 @@ export default function PostAdPage() {
           p_min_amount: Number.parseFloat(formData.minAmount),
           p_max_amount: Number.parseFloat(formData.maxAmount),
           p_account_number: formData.accountNumber || null,
-          p_mpesa_number: formData.mpesaNumber || null,
-          p_paybill_number: formData.paybillNumber || null,
-          p_airtel_money: formData.airtelMoney || null,
+          p_mpesa_number: null,
+          p_paybill_number: null,
+          p_airtel_money: null,
           p_terms_of_trade: formData.termsOfTrade || null,
         })
 
@@ -101,7 +111,6 @@ export default function PostAdPage() {
           return
         }
 
-        console.log("[v0] Sell ad created successfully, coins moved to escrow")
         alert("Sell ad posted successfully! Your coins have been locked for this ad.")
         router.push("/p2p")
       } else {
@@ -115,10 +124,10 @@ export default function PostAdPage() {
             price_per_gx: pricePerGX,
             min_amount: Number.parseFloat(formData.minAmount),
             max_amount: Number.parseFloat(formData.maxAmount),
-            account_number: formData.accountNumber || null,
-            mpesa_number: formData.mpesaNumber || null,
-            paybill_number: formData.paybillNumber || null,
-            airtel_money: formData.airtelMoney || null,
+            account_number: paymentMethodsString || null,
+            mpesa_number: null,
+            paybill_number: null,
+            airtel_money: null,
             terms_of_trade: formData.termsOfTrade || null,
           })
           .select()
@@ -130,7 +139,6 @@ export default function PostAdPage() {
           return
         }
 
-        console.log("[v0] Buy ad created successfully:", data)
         alert("Buy ad posted successfully!")
         router.push("/p2p")
       }
@@ -158,7 +166,6 @@ export default function PostAdPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="glass-card p-8 rounded-xl border border-white/10 space-y-6">
-            {/* Ad Type Selection */}
             <div className="space-y-3">
               <Label className="text-base font-semibold">Ad Type</Label>
               <RadioGroup
@@ -181,7 +188,6 @@ export default function PostAdPage() {
               </RadioGroup>
             </div>
 
-            {/* GX Amount */}
             <div className="space-y-2">
               <Label htmlFor="gxAmount">Amount of GX * (Minimum: 50 GX)</Label>
               <Input
@@ -214,7 +220,6 @@ export default function PostAdPage() {
               </p>
             </div>
 
-            {/* Min and Max Amount */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="minAmount">Min Amount (GX) * (Minimum: 2 GX)</Label>
@@ -243,61 +248,73 @@ export default function PostAdPage() {
               </div>
             </div>
 
-            {/* Payment Methods */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Payment Methods</h3>
 
-              <div className="space-y-2">
-                <Label htmlFor="accountNumber">Account Number</Label>
-                <Input
-                  id="accountNumber"
-                  type="text"
-                  placeholder="Enter account number"
-                  value={formData.accountNumber}
-                  onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="mpesaNumber">M-Pesa Number</Label>
-                <Input
-                  id="mpesaNumber"
-                  type="text"
-                  placeholder="Enter M-Pesa number"
-                  value={formData.mpesaNumber}
-                  onChange={(e) => setFormData({ ...formData, mpesaNumber: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="paybillNumber">Paybill Number</Label>
-                <Input
-                  id="paybillNumber"
-                  type="text"
-                  placeholder="Enter paybill number"
-                  value={formData.paybillNumber}
-                  onChange={(e) => setFormData({ ...formData, paybillNumber: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="airtelMoney">Airtel Money</Label>
-                <Select
-                  value={formData.airtelMoney}
-                  onValueChange={(value) => setFormData({ ...formData, airtelMoney: value })}
-                >
-                  <SelectTrigger id="airtelMoney">
-                    <SelectValue placeholder="Select Airtel Money option" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="enabled">Enabled</SelectItem>
-                    <SelectItem value="disabled">Disabled</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {adType === "buy" ? (
+                <div className="space-y-3">
+                  <p className="text-sm text-gray-400">Select payment methods you accept:</p>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="mpesa"
+                      checked={paymentMethods.mpesa}
+                      onCheckedChange={(checked) => setPaymentMethods({ ...paymentMethods, mpesa: checked as boolean })}
+                    />
+                    <Label htmlFor="mpesa" className="cursor-pointer">
+                      M-Pesa
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="bankTransfer"
+                      checked={paymentMethods.bankTransfer}
+                      onCheckedChange={(checked) =>
+                        setPaymentMethods({ ...paymentMethods, bankTransfer: checked as boolean })
+                      }
+                    />
+                    <Label htmlFor="bankTransfer" className="cursor-pointer">
+                      Bank Transfer
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="paybill"
+                      checked={paymentMethods.paybill}
+                      onCheckedChange={(checked) =>
+                        setPaymentMethods({ ...paymentMethods, paybill: checked as boolean })
+                      }
+                    />
+                    <Label htmlFor="paybill" className="cursor-pointer">
+                      M-Pesa Paybill
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="airtelMoney"
+                      checked={paymentMethods.airtelMoney}
+                      onCheckedChange={(checked) =>
+                        setPaymentMethods({ ...paymentMethods, airtelMoney: checked as boolean })
+                      }
+                    />
+                    <Label htmlFor="airtelMoney" className="cursor-pointer">
+                      Airtel Money
+                    </Label>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label htmlFor="accountNumber">Account Number / Payment Details</Label>
+                  <Input
+                    id="accountNumber"
+                    type="text"
+                    placeholder="Enter your payment details"
+                    value={formData.accountNumber}
+                    onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
+                  />
+                </div>
+              )}
             </div>
 
-            {/* Terms of Trade */}
             <div className="space-y-2">
               <Label htmlFor="termsOfTrade">Terms of Trade</Label>
               <Textarea
