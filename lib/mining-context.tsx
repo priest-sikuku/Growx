@@ -244,75 +244,46 @@ export function MiningProvider({ children }: { children: React.ReactNode }) {
     setPendingReward(reward)
 
     try {
-      const { data: coinData, error: coinError } = await supabase
-        .from("coins")
-        .insert({
-          user_id: userId,
+      const { data: claimResult, error: claimError } = await supabase.rpc("process_mining_claim", {
+        p_user_id: userId,
+        p_reward_amount: reward,
+      })
+
+      if (claimError) {
+        console.error("[v0] Mining claim error:", claimError)
+        throw claimError
+      }
+
+      if (claimResult && claimResult.length > 0) {
+        const result = claimResult[0]
+
+        if (!result.success) {
+          alert(result.message)
+          setIsMining(false)
+          setPendingReward(0)
+          return
+        }
+
+        console.log("[v0] Mining successful:", result.message)
+
+        setNextMineTime(10800) // 3 hours in seconds
+        setBalance((prev) => prev + reward)
+        setTotalMined((prev) => prev + reward)
+        setMiningStreak((prev) => prev + 1)
+
+        addTransaction({
+          id: transactions.length + 1,
+          type: "mine",
           amount: reward,
-          claim_type: "mining",
-          status: "available",
+          time: "just now",
+          status: "completed",
         })
-        .select()
-        .single()
 
-      if (coinError) {
-        console.error("[v0] Coin insert error:", coinError)
-        throw coinError
+        await loadSupplyData()
+        await loadUserData(userId)
+
+        console.log("[v0] Mining completed! Reward:", reward)
       }
-
-      console.log("[v0] Coin inserted:", coinData)
-
-      const { error: txError } = await supabase.from("transactions").insert({
-        user_id: userId,
-        type: "mining",
-        amount: reward,
-        description: "Mining reward",
-        status: "completed",
-      })
-
-      if (txError) {
-        console.error("[v0] Transaction insert error:", txError)
-        throw txError
-      }
-
-      console.log("[v0] Transaction recorded")
-
-      const nextMineDate = new Date()
-      nextMineDate.setSeconds(nextMineDate.getSeconds() + 9000) // 2.5 hours
-
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .update({
-          last_mined_at: new Date().toISOString(),
-          next_mine_at: nextMineDate.toISOString(),
-          total_mined: totalMined + reward,
-          mining_streak: miningStreak + 1,
-        })
-        .eq("id", userId)
-
-      if (profileError) {
-        console.error("[v0] Profile update error:", profileError)
-        throw profileError
-      }
-
-      console.log("[v0] Profile updated with next mine time")
-
-      setBalance((prev) => prev + reward)
-      setTotalMined((prev) => prev + reward)
-      setMiningStreak((prev) => prev + 1)
-      setNextMineTime(9000) // 2.5 hours in seconds
-
-      addTransaction({
-        id: transactions.length + 1,
-        type: "mine",
-        amount: reward,
-        time: "just now",
-        status: "completed",
-      })
-
-      await loadSupplyData()
-
-      console.log("[v0] Mining completed! Reward:", reward)
 
       setTimeout(() => {
         setPendingReward(0)
@@ -323,7 +294,17 @@ export function MiningProvider({ children }: { children: React.ReactNode }) {
       setPendingReward(0)
       setIsMining(false)
     }
-  }, [isMining, nextMineTime, userId, transactions.length, totalMined, miningStreak, remainingSupply, loadSupplyData])
+  }, [
+    isMining,
+    nextMineTime,
+    userId,
+    transactions.length,
+    totalMined,
+    miningStreak,
+    remainingSupply,
+    loadSupplyData,
+    loadUserData,
+  ])
 
   const addTransaction = useCallback((transaction: Transaction) => {
     setTransactions((prev) => [transaction, ...prev])
