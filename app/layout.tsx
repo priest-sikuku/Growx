@@ -3,7 +3,6 @@ import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { MiningProvider } from "@/lib/mining-context"
-import { GXPriceMonitor } from "@/components/gx-price-monitor"
 import "./globals.css"
 
 const _geist = Geist({ subsets: ["latin"] })
@@ -23,10 +22,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`font-sans antialiased bg-gradient-to-b from-[#0f1720] to-[#071124] text-[#e6eef8]`}>
-        <MiningProvider>
-          <GXPriceMonitor />
-          {children}
-        </MiningProvider>
+        <MiningProvider>{children}</MiningProvider>
         <Analytics />
       </body>
     </html>
