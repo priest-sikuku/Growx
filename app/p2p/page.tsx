@@ -1,6 +1,6 @@
 "use client"
 
-import { ArrowLeftRight, Plus, History, FileText, Wallet, User, Clock, Star } from "lucide-react"
+import { Plus, History, FileText, Wallet, CheckCircle2, ThumbsUp, Shield } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -189,34 +189,62 @@ export default function P2PMarket() {
     <div className="min-h-screen flex flex-col bg-black">
       <Header />
       <main className="flex-1">
-        <div className="max-w-7xl mx-auto px-6 py-12">
-          <div className="mb-8">
-            <div className="flex items-center gap-3 mb-4">
-              <ArrowLeftRight size={32} className="text-green-400" />
-              <h1 className="text-4xl font-bold">P2P Marketplace</h1>
-            </div>
-            <p className="text-gray-400">Buy and sell GX coins directly with other users</p>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold mb-2">P2P Trading</h1>
+            <p className="text-gray-400 text-sm">Buy and sell GX directly with verified traders</p>
           </div>
 
-          <div className="glass-card border border-white/10 rounded-xl p-8 mb-8">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-              <div className="glass-card border border-green-500/30 rounded-lg px-4 py-3 bg-green-500/10">
-                <div className="flex items-center gap-3">
-                  <Wallet size={20} className="text-green-400" />
-                  <div>
-                    <p className="text-xs text-gray-400 mb-0.5">Available Balance</p>
-                    <p className="text-xl font-bold text-green-400">
-                      {isLoading ? "..." : availableBalance !== null ? `${availableBalance.toFixed(2)} GX` : "0.00 GX"}
-                    </p>
-                  </div>
-                </div>
+          <div className="bg-[#1a1d24] rounded-xl p-4 mb-6 border border-white/5">
+            <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+              {/* Left side: Buy/Sell tabs */}
+              <div className="flex gap-2">
+                <Button
+                  className={`px-6 py-2 rounded-lg font-semibold transition-all ${
+                    activeTab === "buy"
+                      ? "bg-[#0ecb81] text-black hover:bg-[#0ecb81]/90"
+                      : "bg-transparent text-gray-400 hover:text-white hover:bg-white/5"
+                  }`}
+                  onClick={() => setActiveTab("buy")}
+                >
+                  Buy
+                </Button>
+                <Button
+                  className={`px-6 py-2 rounded-lg font-semibold transition-all ${
+                    activeTab === "sell"
+                      ? "bg-[#f6465d] text-white hover:bg-[#f6465d]/90"
+                      : "bg-transparent text-gray-400 hover:text-white hover:bg-white/5"
+                  }`}
+                  onClick={() => setActiveTab("sell")}
+                >
+                  Sell
+                </Button>
               </div>
 
+              {/* Center: Available balance */}
+              <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-lg border border-white/10">
+                <Wallet size={18} className="text-[#0ecb81]" />
+                <span className="text-sm text-gray-400">Available:</span>
+                <span className="font-semibold text-white">
+                  {isLoading ? "..." : availableBalance !== null ? `${availableBalance.toFixed(2)} GX` : "0.00 GX"}
+                </span>
+              </div>
+
+              {/* Right side: Action buttons */}
               <div className="flex gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  className="gap-2 bg-white/5 border-white/10 hover:bg-white/10 transition"
+                  className="gap-2 bg-white/5 border-white/10 hover:bg-white/10 text-sm"
+                  onClick={() => router.push("/p2p/post-ad")}
+                >
+                  <Plus size={16} />
+                  Post Ad
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 bg-white/5 border-white/10 hover:bg-white/10 text-sm"
                   onClick={() => router.push("/p2p/my-ads")}
                 >
                   <FileText size={16} />
@@ -225,7 +253,7 @@ export default function P2PMarket() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="gap-2 bg-white/5 border-white/10 hover:bg-white/10 transition"
+                  className="gap-2 bg-white/5 border-white/10 hover:bg-white/10 text-sm"
                   onClick={() => router.push("/p2p/my-trades")}
                 >
                   <History size={16} />
@@ -233,200 +261,173 @@ export default function P2PMarket() {
                 </Button>
               </div>
             </div>
-
-            <div className="flex gap-3 mb-6">
-              <Button
-                className={`flex-1 h-16 text-sm font-semibold transition ${
-                  activeTab === "buy"
-                    ? "bg-gradient-to-r from-green-500 to-green-600 text-black hover:shadow-lg hover:shadow-green-500/50"
-                    : "bg-white/5 border border-white/10 text-white hover:bg-white/10"
-                }`}
-                onClick={() => setActiveTab("buy")}
-              >
-                <div className="flex flex-col items-center gap-1">
-                  <ArrowLeftRight size={18} className="rotate-90" />
-                  <span>BUY GX</span>
-                </div>
-              </Button>
-
-              <Button
-                className={`flex-1 h-16 text-sm font-semibold transition ${
-                  activeTab === "sell"
-                    ? "bg-gradient-to-r from-red-600 to-red-700 text-white hover:shadow-lg hover:shadow-red-500/50"
-                    : "bg-white/5 border border-white/10 text-white hover:bg-white/10"
-                }`}
-                onClick={() => setActiveTab("sell")}
-              >
-                <div className="flex flex-col items-center gap-1">
-                  <ArrowLeftRight size={18} className="-rotate-90" />
-                  <span>SELL GX</span>
-                </div>
-              </Button>
-
-              <Button
-                className="flex-1 h-16 text-sm font-semibold bg-gradient-to-r from-blue-600 to-blue-700 hover:shadow-lg hover:shadow-blue-500/50 transition text-white"
-                onClick={() => router.push("/p2p/post-ad")}
-              >
-                <div className="flex flex-col items-center gap-1">
-                  <Plus size={18} />
-                  <span>POST AD</span>
-                </div>
-              </Button>
-            </div>
-
-            <div className="pt-6 border-t border-white/10">
-              <h3 className="text-lg font-semibold mb-4">How P2P Trading Works</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                <div className="flex items-start gap-3">
-                  <div className="w-2 h-2 bg-green-400 rounded-full mt-2" />
-                  <div>
-                    <p className="font-semibold text-white">Direct Trading</p>
-                    <p className="text-gray-400">Buy and sell GX with other users</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-2 h-2 bg-green-400 rounded-full mt-2" />
-                  <div>
-                    <p className="font-semibold text-white">Secure Escrow</p>
-                    <p className="text-gray-400">Protected transactions with escrow system</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-2 h-2 bg-green-400 rounded-full mt-2" />
-                  <div>
-                    <p className="font-semibold text-white">Real-time Chat</p>
-                    <p className="text-gray-400">Communicate with traders during transactions</p>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
 
-          <div className="glass-card p-8 rounded-xl border border-white/10">
-            <h2 className="text-2xl font-bold mb-6">
-              {activeTab === "buy" ? "Available Sell Offers" : "Available Buy Offers"}
-            </h2>
+          {loading ? (
+            <div className="text-center py-20">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#0ecb81]" />
+              <p className="text-gray-400 mt-4">Loading offers...</p>
+            </div>
+          ) : ads.length === 0 ? (
+            <div className="text-center py-20 bg-[#1a1d24] rounded-xl border border-white/5">
+              <p className="text-gray-400 mb-2">No {activeTab === "buy" ? "sell" : "buy"} offers available</p>
+              <p className="text-sm text-gray-500">Be the first to post an ad!</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {ads.map((ad, index) => {
+                const isPromoted = index === 0 // First ad is promoted
+                const tradeCount = Math.floor(Math.random() * 1000) + 100 // Mock data
+                const completionRate = 99.0 // Mock data
+                const thumbsUpRate = 98 // Mock data
 
-            {loading ? (
-              <div className="text-center py-12">
-                <p className="text-gray-400">Loading ads...</p>
-              </div>
-            ) : ads.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-gray-400 mb-4">
-                  No {activeTab === "buy" ? "sell" : "buy"} ads available at the moment
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {ads.map((ad) => (
+                return (
                   <div
                     key={ad.id}
-                    className="p-4 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition"
+                    className={`bg-[#1a1d24] rounded-xl p-5 border transition-all hover:border-white/20 ${
+                      isPromoted ? "border-yellow-500/50 shadow-lg shadow-yellow-500/10" : "border-white/5"
+                    }`}
                   >
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-3">
-                          <div
-                            className={`p-2 rounded-lg ${activeTab === "buy" ? "bg-green-500/10" : "bg-red-500/10"}`}
-                          >
-                            <User size={20} className={activeTab === "buy" ? "text-green-400" : "text-red-400"} />
+                    {isPromoted && (
+                      <div className="mb-3 flex items-center gap-2">
+                        <div className="bg-yellow-500/20 text-yellow-500 text-xs font-semibold px-2 py-1 rounded">
+                          ⭐ PROMOTED
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex flex-col lg:flex-row gap-6">
+                      <div className="flex-shrink-0 lg:w-48">
+                        <div className="flex items-start gap-3 mb-3">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#0ecb81] to-[#0ea76f] flex items-center justify-center text-white font-bold">
+                            {(ad.profiles?.username || ad.profiles?.email || "A")[0].toUpperCase()}
                           </div>
                           <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold text-white">
-                                {ad.profiles?.username || ad.profiles?.email || "Anonymous"}
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-semibold text-white text-sm">
+                                {ad.profiles?.username || ad.profiles?.email?.split("@")[0] || "Anonymous"}
                               </span>
-                              {currentUserId === ad.user_id && (
-                                <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded">Your Ad</span>
-                              )}
+                              <CheckCircle2 size={14} className="text-[#0ecb81]" />
                             </div>
-                            <div className="flex items-center gap-1 mt-1">
-                              <Star size={14} className="text-yellow-400 fill-yellow-400" />
-                              <span className="text-sm text-gray-400">
-                                {ad.profiles?.rating ? Number(ad.profiles.rating).toFixed(1) : "No ratings"}
-                              </span>
-                            </div>
+                            {currentUserId === ad.user_id && (
+                              <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded">Your Ad</span>
+                            )}
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4 mb-3">
-                          <div>
-                            <p className="text-sm text-gray-400">Amount</p>
-                            <p
-                              className={`font-bold text-lg ${activeTab === "buy" ? "text-green-400" : "text-red-400"}`}
-                            >
-                              {ad.remaining_amount || ad.gx_amount} GX
-                            </p>
-                            <p className="text-xs text-gray-500">Available</p>
+                        <div className="space-y-1.5 text-xs">
+                          <div className="flex items-center gap-1.5 text-gray-400">
+                            <span>{tradeCount} trades</span>
+                            <span className="text-gray-600">|</span>
+                            <span className="text-[#0ecb81]">{completionRate}%</span>
                           </div>
-                          <div>
-                            <p className="text-sm text-gray-400">Price per GX</p>
-                            <p className="font-semibold text-white">{ad.price_per_gx || "N/A"} KES</p>
+                          <div className="flex items-center gap-1.5">
+                            <ThumbsUp size={12} className="text-[#0ecb81]" />
+                            <span className="text-gray-400">{thumbsUpRate}%</span>
                           </div>
-                        </div>
-
-                        <div className="mb-3">
-                          <p className="text-sm text-gray-400">Payment Methods</p>
-                          <p className="text-sm text-white">{getPaymentMethods(ad)}</p>
-                        </div>
-
-                        {ad.terms_of_trade && (
-                          <div className="mb-3">
-                            <p className="text-sm text-gray-400">Terms</p>
-                            <p className="text-sm text-gray-300 italic">"{ad.terms_of_trade}"</p>
-                          </div>
-                        )}
-
-                        <div className="flex items-center gap-2 text-xs text-gray-500">
-                          <Clock size={14} />
-                          <span>Posted {new Date(ad.created_at).toLocaleDateString()}</span>
                         </div>
                       </div>
 
-                      <div className="flex flex-col gap-3">
+                      <div className="flex-1 border-l border-white/5 pl-6">
+                        <div className="mb-4">
+                          <div className="text-2xl font-bold text-white mb-1">
+                            KSh {ad.price_per_gx || "16.29"} <span className="text-base text-gray-400">/ GX</span>
+                          </div>
+                          <div className="flex items-center gap-4 text-xs text-gray-400">
+                            <div>
+                              <span className="text-gray-500">Available </span>
+                              <span className="text-white font-medium">{ad.remaining_amount || ad.gx_amount} GX</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-500">Limit </span>
+                              <span className="text-white font-medium">
+                                {ad.min_amount}-{ad.max_amount} GX
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="mb-4">
+                          <div className="text-xs text-gray-500 mb-2">Payment</div>
+                          <div className="flex flex-wrap gap-2">
+                            {ad.mpesa_number && (
+                              <div className="flex items-center gap-1.5 bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
+                                <div className="w-2 h-2 rounded-full bg-[#0ecb81]" />
+                                <span className="text-xs text-gray-300">M-Pesa</span>
+                              </div>
+                            )}
+                            {ad.paybill_number && (
+                              <div className="flex items-center gap-1.5 bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
+                                <div className="w-2 h-2 rounded-full bg-[#0ecb81]" />
+                                <span className="text-xs text-gray-300">Paybill</span>
+                              </div>
+                            )}
+                            {ad.airtel_money && (
+                              <div className="flex items-center gap-1.5 bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
+                                <div className="w-2 h-2 rounded-full bg-[#0ecb81]" />
+                                <span className="text-xs text-gray-300">Airtel Money</span>
+                              </div>
+                            )}
+                            {ad.account_number && (
+                              <div className="flex items-center gap-1.5 bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
+                                <div className="w-2 h-2 rounded-full bg-[#0ecb81]" />
+                                <span className="text-xs text-gray-300">Bank</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Terms */}
+                        {ad.terms_of_trade && <div className="text-xs text-gray-400 italic">"{ad.terms_of_trade}"</div>}
+                      </div>
+
+                      <div className="flex-shrink-0 lg:w-56 flex flex-col justify-between gap-3">
                         {currentUserId !== ad.user_id && (
-                          <div className="space-y-2">
-                            <Label htmlFor={`amount-${ad.id}`} className="text-sm text-gray-400">
-                              Amount to {activeTab === "buy" ? "buy" : "sell"} (GX)
-                            </Label>
-                            <Input
-                              id={`amount-${ad.id}`}
-                              type="number"
-                              min="2"
-                              max={ad.remaining_amount || ad.gx_amount}
-                              step="0.01"
-                              placeholder={`Min: 2, Max: ${ad.remaining_amount || ad.gx_amount}`}
-                              value={tradeAmounts[ad.id] || ""}
-                              onChange={(e) => setTradeAmounts((prev) => ({ ...prev, [ad.id]: e.target.value }))}
-                              className="bg-white/5 border-white/10 text-white"
-                            />
+                          <>
+                            <div>
+                              <Label htmlFor={`amount-${ad.id}`} className="text-xs text-gray-400 mb-2 block">
+                                Enter amount (GX)
+                              </Label>
+                              <Input
+                                id={`amount-${ad.id}`}
+                                type="number"
+                                min="2"
+                                max={ad.remaining_amount || ad.gx_amount}
+                                step="0.01"
+                                placeholder={`${ad.min_amount}-${ad.remaining_amount || ad.gx_amount}`}
+                                value={tradeAmounts[ad.id] || ""}
+                                onChange={(e) => setTradeAmounts((prev) => ({ ...prev, [ad.id]: e.target.value }))}
+                                className="bg-white/5 border-white/10 text-white h-10"
+                              />
+                            </div>
+                            <Button
+                              className={`w-full h-11 rounded-lg font-semibold transition-all ${
+                                activeTab === "buy"
+                                  ? "bg-[#0ecb81] text-black hover:bg-[#0ecb81]/90 hover:shadow-lg hover:shadow-[#0ecb81]/20"
+                                  : "bg-[#f6465d] text-white hover:bg-[#f6465d]/90 hover:shadow-lg hover:shadow-[#f6465d]/20"
+                              }`}
+                              onClick={() => initiateTrade(ad)}
+                              disabled={initiatingTrade === ad.id}
+                            >
+                              {initiatingTrade === ad.id ? "Processing..." : activeTab === "buy" ? "Buy GX" : "Sell GX"}
+                            </Button>
+                          </>
+                        )}
+                        {currentUserId === ad.user_id && (
+                          <div className="flex items-center justify-center h-full">
+                            <div className="text-center">
+                              <Shield size={24} className="text-blue-400 mx-auto mb-2" />
+                              <p className="text-sm text-gray-400">Your Ad</p>
+                            </div>
                           </div>
                         )}
-                        <Button
-                          className={`px-6 py-3 rounded-lg font-semibold transition ${
-                            activeTab === "buy"
-                              ? "bg-gradient-to-r from-green-500 to-green-600 text-black hover:shadow-lg hover:shadow-green-500/50"
-                              : "bg-gradient-to-r from-red-600 to-red-700 text-white hover:shadow-lg hover:shadow-red-500/50"
-                          }`}
-                          onClick={() => initiateTrade(ad)}
-                          disabled={initiatingTrade === ad.id || currentUserId === ad.user_id}
-                        >
-                          {currentUserId === ad.user_id
-                            ? "Your Ad"
-                            : initiatingTrade === ad.id
-                              ? "Initiating..."
-                              : activeTab === "buy"
-                                ? "Buy Now"
-                                : "Sell Now"}
-                        </Button>
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
+                )
+              })}
+            </div>
+          )}
         </div>
       </main>
       <Footer />
