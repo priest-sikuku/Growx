@@ -1,6 +1,6 @@
 "use client"
 
-import { Plus, History, FileText, Wallet, CheckCircle2, Shield, Star } from "lucide-react"
+import { Plus, History, FileText, Wallet, CheckCircle2, ThumbsUp, Shield } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -9,7 +9,6 @@ import Footer from "@/components/footer"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
-import { fetchAvailableBalance } from "@/lib/supabase/utils" // Declare fetchAvailableBalance
 
 interface Ad {
   id: string
@@ -33,14 +32,6 @@ interface Ad {
   price_per_gx?: number
 }
 
-interface UserStats {
-  total_trades: number
-  completed_trades: number
-  completion_rate: number
-  average_rating: number
-  total_ratings: number
-}
-
 export default function P2PMarket() {
   const router = useRouter()
   const supabase = createClient()
@@ -54,12 +45,10 @@ export default function P2PMarket() {
   const [initiatingTrade, setInitiatingTrade] = useState<string | null>(null)
   const [tradeAmounts, setTradeAmounts] = useState<{ [key: string]: string }>({})
 
-  const [userStats, setUserStats] = useState<{ [key: string]: UserStats }>({})
-
   useEffect(() => {
-    fetchAvailableBalance(setAvailableBalance, setIsLoading)
+    fetchAvailableBalance()
     getCurrentUser()
-    const interval = setInterval(() => fetchAvailableBalance(setAvailableBalance, setIsLoading), 5000)
+    const interval = setInterval(fetchAvailableBalance, 5000)
     return () => clearInterval(interval)
   }, [])
 
@@ -99,11 +88,6 @@ export default function P2PMarket() {
       }
 
       setAds(data || [])
-
-      if (data && data.length > 0) {
-        const uniqueUserIds = [...new Set(data.map((ad) => ad.user_id))]
-        await fetchUserStats(uniqueUserIds)
-      }
     } catch (error) {
       console.error("[v0] Error:", error)
     } finally {
@@ -111,28 +95,30 @@ export default function P2PMarket() {
     }
   }
 
-  async function fetchUserStats(userIds: string[]) {
-    const statsPromises = userIds.map(async (userId) => {
-      const { data, error } = await supabase.rpc("get_user_p2p_stats", { p_user_id: userId }).single()
+  async function fetchAvailableBalance() {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
 
-      if (error) {
-        console.error(`[v0] Error fetching stats for user ${userId}:`, error)
-        return { userId, stats: null }
+    if (!user) {
+      setIsLoading(false)
+      return
+    }
+
+    const { data, error } = await supabase.rpc("get_available_balance", { user_id: user.id })
+
+    if (error) {
+      console.error("[v0] Error fetching available balance:", error)
+      const { data: profileData } = await supabase.from("profiles").select("total_mined").eq("id", user.id).single()
+
+      if (profileData) {
+        setAvailableBalance(profileData.total_mined || 0)
       }
+    } else if (data !== null) {
+      setAvailableBalance(data)
+    }
 
-      return { userId, stats: data }
-    })
-
-    const results = await Promise.all(statsPromises)
-    const statsMap: { [key: string]: UserStats } = {}
-
-    results.forEach(({ userId, stats }) => {
-      if (stats) {
-        statsMap[userId] = stats
-      }
-    })
-
-    setUserStats(statsMap)
+    setIsLoading(false)
   }
 
   async function initiateTrade(ad: Ad) {
@@ -197,24 +183,6 @@ export default function P2PMarket() {
     if (ad.airtel_money) methods.push("Airtel Money")
     if (ad.account_number) methods.push("Bank Account")
     return methods.join(", ") || "Not specified"
-  }
-
-  function renderStarRating(rating: number) {
-    const stars = []
-    const fullStars = Math.floor(rating)
-    const hasHalfStar = rating % 1 >= 0.5
-
-    for (let i = 0; i < 5; i++) {
-      if (i < fullStars) {
-        stars.push(<Star key={i} size={12} className="fill-yellow-500 text-yellow-500" />)
-      } else if (i === fullStars && hasHalfStar) {
-        stars.push(<Star key={i} size={12} className="fill-yellow-500/50 text-yellow-500" />)
-      } else {
-        stars.push(<Star key={i} size={12} className="text-gray-600" />)
-      }
-    }
-
-    return stars
   }
 
   return (
@@ -308,14 +276,10 @@ export default function P2PMarket() {
           ) : (
             <div className="space-y-3">
               {ads.map((ad, index) => {
-                const isPromoted = index === 0
-                const stats = userStats[ad.user_id] || {
-                  total_trades: 0,
-                  completed_trades: 0,
-                  completion_rate: 0,
-                  average_rating: 0,
-                  total_ratings: 0,
-                }
+                const isPromoted = index === 0 // First ad is promoted
+                const tradeCount = Math.floor(Math.random() * 1000) + 100 // Mock data
+                const completionRate = 99.0 // Mock data
+                const thumbsUpRate = 98 // Mock data
 
                 return (
                   <div
@@ -353,16 +317,13 @@ export default function P2PMarket() {
 
                         <div className="space-y-1.5 text-xs">
                           <div className="flex items-center gap-1.5 text-gray-400">
-                            <span>{stats.total_trades} trades</span>
+                            <span>{tradeCount} trades</span>
                             <span className="text-gray-600">|</span>
-                            <span className="text-[#0ecb81]">{stats.completion_rate.toFixed(1)}%</span>
+                            <span className="text-[#0ecb81]">{completionRate}%</span>
                           </div>
                           <div className="flex items-center gap-1.5">
-                            <div className="flex gap-0.5">{renderStarRating(stats.average_rating)}</div>
-                            <span className="text-gray-400">
-                              {stats.average_rating > 0 ? stats.average_rating.toFixed(1) : "No ratings"}
-                            </span>
-                            {stats.total_ratings > 0 && <span className="text-gray-600">({stats.total_ratings})</span>}
+                            <ThumbsUp size={12} className="text-[#0ecb81]" />
+                            <span className="text-gray-400">{thumbsUpRate}%</span>
                           </div>
                         </div>
                       </div>
