@@ -376,90 +376,92 @@ export default function TradePage() {
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
       <main className="flex-1">
-        <div className="max-w-4xl mx-auto px-6 py-12">
+        <div className="max-w-7xl mx-auto px-6 py-12">
           <Button variant="ghost" className="mb-6 hover:bg-white/5" onClick={() => router.push("/p2p")}>
             <ArrowLeft size={20} className="mr-2" />
             Back to P2P
           </Button>
 
-          <div className="mb-6">
+          <div className="mb-8">
             <div className="flex items-center justify-between mb-2">
               <h1 className="text-4xl font-bold">Trade Details</h1>
               {getStatusBadge(trade.status)}
             </div>
-            <p className="text-sm text-gray-400">Trade ID: {trade.id}</p>
+            <p className="text-gray-400">Trade ID: {trade.id}</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="glass-card p-6 rounded-xl border border-white/10">
+              <p className="text-gray-400 text-sm mb-2">Trade Amount</p>
+              <p className="text-3xl font-bold text-green-400">{trade.gx_amount} GX</p>
+            </div>
+            <div className="glass-card p-6 rounded-xl border border-white/10">
+              <p className="text-gray-400 text-sm mb-2">Escrow Amount</p>
+              <p className="text-3xl font-bold text-yellow-400">{trade.escrow_amount} GX</p>
+            </div>
+            <div className="glass-card p-6 rounded-xl border border-white/10">
+              <p className="text-gray-400 text-sm mb-2">Status</p>
+              <div className="mt-2">{getStatusBadge(trade.status)}</div>
+            </div>
           </div>
 
           <div className="glass-card p-8 rounded-xl border border-white/10 mb-6">
+            <h3 className="text-xl font-semibold mb-6">Trade Information</h3>
             <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <h3 className="font-semibold mb-4">Trade Information</h3>
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-sm text-gray-400">Amount</p>
-                    <p className="font-semibold text-lg text-green-400">{trade.gx_amount} GX</p>
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm text-gray-400 mb-1">Buyer</p>
+                  <div className="flex items-center gap-2 p-3 bg-white/5 rounded-lg">
+                    <User size={16} className="text-green-400" />
+                    <p className="font-semibold">{trade.buyer?.username || trade.buyer?.email || "Anonymous"}</p>
+                    {isBuyer && <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded">You</span>}
                   </div>
-                  <div>
-                    <p className="text-sm text-gray-400">Escrow Amount</p>
-                    <p className="font-semibold">{trade.escrow_amount} GX</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400 mb-1">Seller</p>
+                  <div className="flex items-center gap-2 p-3 bg-white/5 rounded-lg">
+                    <User size={16} className="text-red-400" />
+                    <p className="font-semibold">{trade.seller?.username || trade.seller?.email || "Anonymous"}</p>
+                    {isSeller && <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded">You</span>}
                   </div>
-                  <div>
-                    <p className="text-sm text-gray-400">Created</p>
-                    <p className="text-sm">{new Date(trade.created_at).toLocaleString()}</p>
-                  </div>
-                  {trade.expires_at && (
-                    <div>
-                      <p className="text-sm text-gray-400">Expires</p>
-                      <p className="text-sm">{new Date(trade.expires_at).toLocaleString()}</p>
-                    </div>
-                  )}
                 </div>
               </div>
 
-              <div>
-                <h3 className="font-semibold mb-4">Participants</h3>
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-sm text-gray-400">Buyer</p>
-                    <div className="flex items-center gap-2">
-                      <User size={16} className="text-green-400" />
-                      <p className="font-semibold">{trade.buyer?.username || trade.buyer?.email || "Anonymous"}</p>
-                      {isBuyer && <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded">You</span>}
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-400">Seller</p>
-                    <div className="flex items-center gap-2">
-                      <User size={16} className="text-red-400" />
-                      <p className="font-semibold">{trade.seller?.username || trade.seller?.email || "Anonymous"}</p>
-                      {isSeller && <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded">You</span>}
-                    </div>
-                  </div>
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm text-gray-400 mb-1">Created</p>
+                  <p className="text-sm p-3 bg-white/5 rounded-lg">{new Date(trade.created_at).toLocaleString()}</p>
                 </div>
+                {trade.expires_at && (
+                  <div>
+                    <p className="text-sm text-gray-400 mb-1">Expires</p>
+                    <p className="text-sm p-3 bg-white/5 rounded-lg">{new Date(trade.expires_at).toLocaleString()}</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
           <div className="glass-card p-8 rounded-xl border border-white/10 mb-6">
-            <h3 className="font-semibold mb-4">Payment Details</h3>
+            <h3 className="text-xl font-semibold mb-4">Payment Details</h3>
             <div className="space-y-2">
               {getPaymentMethods().map((method, index) => (
-                <p key={index} className="text-sm">
+                <p key={index} className="text-sm p-3 bg-white/5 rounded-lg">
                   {method}
                 </p>
               ))}
             </div>
             {trade.ad?.terms_of_trade && (
               <div className="mt-4">
-                <p className="text-sm text-gray-400">Terms of Trade</p>
-                <p className="text-sm">{trade.ad.terms_of_trade}</p>
+                <p className="text-sm text-gray-400 mb-2">Terms of Trade</p>
+                <p className="text-sm p-3 bg-white/5 rounded-lg">{trade.ad.terms_of_trade}</p>
               </div>
             )}
           </div>
 
           <div className="glass-card p-8 rounded-xl border border-white/10 mb-6">
-            <h3 className="font-semibold mb-4">Trade Chat</h3>
-            <div className="bg-black/20 rounded-lg p-4 h-64 overflow-y-auto mb-4">
+            <h3 className="text-xl font-semibold mb-4">Trade Chat</h3>
+            <div className="bg-black/20 rounded-lg p-4 h-64 overflow-y-auto mb-4 border border-white/5">
               {messages.length === 0 ? (
                 <p className="text-center text-gray-500 text-sm">No messages yet. Start the conversation!</p>
               ) : (
@@ -506,8 +508,8 @@ export default function TradePage() {
 
           {/* Action Buttons */}
           {trade.status !== "completed" && trade.status !== "cancelled" && (
-            <div className="glass-card p-8 rounded-xl border border-white/10">
-              <h3 className="font-semibold mb-4">Actions</h3>
+            <div className="glass-card p-8 rounded-xl border border-white/10 mb-6">
+              <h3 className="text-xl font-semibold mb-4">Actions</h3>
               <div className="flex flex-wrap gap-3">
                 {isBuyer && trade.status === "escrowed" && (
                   <Button
@@ -541,7 +543,7 @@ export default function TradePage() {
 
           {/* Completed Message */}
           {trade.status === "completed" && (
-            <div className="glass-card p-8 bg-green-500/10 border-green-500/20 rounded-xl">
+            <div className="glass-card p-8 bg-green-500/10 border-green-500/20 rounded-xl mb-6">
               <div className="flex items-center gap-3">
                 <CheckCircle size={24} className="text-green-400" />
                 <div>
@@ -554,7 +556,7 @@ export default function TradePage() {
 
           {trade.status === "completed" && !existingRating && (
             <div className="glass-card p-8 rounded-xl border border-white/10 mb-6">
-              <h3 className="font-semibold mb-4">Rate this Trade</h3>
+              <h3 className="text-xl font-semibold mb-4">Rate this Trade</h3>
               {!showRatingForm ? (
                 <Button
                   onClick={() => setShowRatingForm(true)}
@@ -602,7 +604,7 @@ export default function TradePage() {
                     >
                       {submittingRating ? "Submitting..." : "Submit Rating"}
                     </Button>
-                    <Button variant="outline" onClick={() => setShowRatingForm(false)}>
+                    <Button variant="outline" onClick={() => setShowRatingForm(false)} className="border-white/10">
                       Cancel
                     </Button>
                   </div>
@@ -613,7 +615,7 @@ export default function TradePage() {
 
           {existingRating && (
             <div className="glass-card p-8 rounded-xl border border-green-500/30 bg-green-500/10 mb-6">
-              <h3 className="font-semibold mb-2 text-green-400">You rated this trade</h3>
+              <h3 className="text-xl font-semibold mb-2 text-green-400">You rated this trade</h3>
               <div className="flex gap-1 mb-2">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <Star
