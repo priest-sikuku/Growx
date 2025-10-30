@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { createBrowserClient } from "@supabase/ssr"
+import { createClient } from "@/lib/supabase/client"
 import { Users, DollarSign, TrendingUp, Award, Settings, Package } from "lucide-react"
 import Link from "next/link"
 
@@ -21,15 +21,14 @@ export function UserStatsCard() {
   const [stats, setStats] = useState<UserStats | null>(null)
   const [supply, setSupply] = useState<SupplyData | null>(null)
   const [loading, setLoading] = useState(true)
-
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  )
+  const supabase = createClient()
 
   useEffect(() => {
     fetchUserStats()
     fetchSupply()
+
+    const supplyInterval = setInterval(fetchSupply, 5000)
+    return () => clearInterval(supplyInterval)
   }, [])
 
   const fetchUserStats = async () => {
@@ -41,19 +40,19 @@ export function UserStatsCard() {
 
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
-        .select("total_referrals, total_commission, rating, total_trades")
+        .select("total_commission, commission_earned, rating, total_trades")
         .eq("id", user.id)
         .single()
 
       if (profileError) {
         console.error("[v0] Error fetching profile stats:", profileError)
-        return
       }
 
       const { data: referralsData, error: referralsError } = await supabase
         .from("referrals")
         .select("id", { count: "exact" })
         .eq("referrer_id", user.id)
+        .eq("status", "active")
 
       if (referralsError) {
         console.error("[v0] Error fetching referrals count:", referralsError)
@@ -67,11 +66,15 @@ export function UserStatsCard() {
         .eq("user_id", user.id)
         .single()
 
+      if (statsError) {
+        console.error("[v0] Error fetching user stats:", statsError)
+      }
+
       const combinedStats: UserStats = {
         total_referrals: actualReferralCount,
-        commission_earned: profileData?.total_commission ?? 0,
-        rating: profileData?.rating ?? 0,
-        total_roi: statsData?.total_roi ?? 0,
+        commission_earned: Number(profileData?.total_commission ?? profileData?.commission_earned ?? 0),
+        rating: Number(profileData?.rating ?? 0),
+        total_roi: Number(statsData?.total_roi ?? 0),
       }
 
       console.log("[v0] User stats loaded:", combinedStats)
@@ -92,7 +95,12 @@ export function UserStatsCard() {
         return
       }
 
-      setSupply(data)
+      if (data) {
+        setSupply({
+          remaining_supply: Number(data.remaining_supply),
+          total_supply: Number(data.total_supply),
+        })
+      }
     } catch (error) {
       console.error("[v0] Error:", error)
     }
@@ -112,6 +120,7 @@ export function UserStatsCard() {
 
   const roiColor = (stats?.total_roi ?? 0) >= 0 ? "text-green-400" : "text-red-400"
   const roiSign = (stats?.total_roi ?? 0) >= 0 ? "+" : ""
+  const supplyPercent = supply ? ((supply.remaining_supply / supply.total_supply) * 100).toFixed(1) : "0.0"
 
   return (
     <div className="glass-card p-8 rounded-2xl border border-white/5">
@@ -188,11 +197,18 @@ export function UserStatsCard() {
             <div className="p-2 bg-orange-500/10 rounded-lg">
               <Package className="w-5 h-5 text-orange-400" />
             </div>
-            <div>
-              <p className="text-sm text-gray-400">Remaining GX Supply</p>
+            <div className="flex-1">
+              <p className="text-sm text-gray-400 mb-1">Remaining GX Supply</p>
               <p className="text-xl font-bold">
                 {(supply?.remaining_supply ?? 0).toLocaleString()} / {(supply?.total_supply ?? 0).toLocaleString()}
               </p>
+              <div className="w-full h-2 bg-white/5 rounded-full mt-2 overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-orange-500 to-orange-600 transition-all duration-500"
+                  style={{ width: `${supplyPercent}%` }}
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-1">{supplyPercent}% remaining</p>
             </div>
           </div>
         </div>

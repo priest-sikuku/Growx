@@ -17,8 +17,8 @@ interface MiningContextType {
   activeTrades: Trade[]
   claimedCoins: ClaimedCoin[]
   userId: string | null
-  remainingSupply: number // Added remaining supply tracking
-  totalSupply: number // Added total supply tracking
+  remainingSupply: number
+  totalSupply: number
   mine: () => Promise<void>
   addTransaction: (transaction: Transaction) => void
   updateBalance: (amount: number) => void
@@ -101,12 +101,12 @@ export function MiningProvider({ children }: { children: React.ReactNode }) {
     if (!userId) return
 
     const updateTimer = async () => {
-      const { data: profile } = await supabase.from("profiles").select("next_mine_at").eq("id", userId).single()
+      const { data: profile } = await supabase.from("profiles").select("next_claim_time").eq("id", userId).single()
 
-      if (profile?.next_mine_at) {
-        const nextMineDate = new Date(profile.next_mine_at)
+      if (profile?.next_claim_time) {
+        const nextClaimDate = new Date(profile.next_claim_time)
         const now = new Date()
-        const diffInSeconds = Math.max(0, Math.floor((nextMineDate.getTime() - now.getTime()) / 1000))
+        const diffInSeconds = Math.max(0, Math.floor((nextClaimDate.getTime() - now.getTime()) / 1000))
         setNextMineTime(diffInSeconds)
       } else {
         setNextMineTime(0)
@@ -116,7 +116,7 @@ export function MiningProvider({ children }: { children: React.ReactNode }) {
     updateTimer()
     const interval = setInterval(updateTimer, 1000)
     return () => clearInterval(interval)
-  }, [userId])
+  }, [userId, supabase])
 
   const loadSupplyData = useCallback(async () => {
     try {
@@ -130,100 +130,84 @@ export function MiningProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error("[v0] Error loading supply:", error)
     }
-  }, [])
+  }, [supabase])
 
   useEffect(() => {
-    const interval = setInterval(loadSupplyData, 5000) // Refresh every 5 seconds
+    const interval = setInterval(loadSupplyData, 5000)
     return () => clearInterval(interval)
   }, [loadSupplyData])
 
-  useEffect(() => {
-    if (!userId) return
+  const loadUserData = useCallback(
+    async (uid: string) => {
+      try {
+        console.log("[v0] Loading user data for:", uid)
 
-    const interval = setInterval(() => {
-      setNextMineTime((prev) => {
-        if (prev <= 0) {
-          return 0
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("rating, total_trades, referral_code, total_mined, mining_streak, next_claim_time")
+          .eq("id", uid)
+          .single()
+
+        if (profile) {
+          console.log("[v0] Profile loaded:", profile)
+          setUserRating(Number(profile.rating) || 0.0)
+          setUserTrades(Number(profile.total_trades) || 0)
+          setTotalMined(Number(profile.total_mined) || 0.0)
+          setMiningStreak(Number(profile.mining_streak) || 0)
+        } else {
+          console.log("[v0] No profile found, setting defaults")
+          setUserRating(0.0)
+          setUserTrades(0)
+          setTotalMined(0.0)
+          setMiningStreak(0)
         }
-        return prev - 1
-      })
-    }, 1000)
-    return () => clearInterval(interval)
-  }, [userId])
 
-  useEffect(() => {
-    const dailyGrowthInterval = setInterval(() => {
-      setBalance((prev) => prev * 1.03)
-    }, 86400000)
-    return () => clearInterval(dailyGrowthInterval)
-  }, [])
+        const { data: coins } = await supabase
+          .from("coins")
+          .select("amount")
+          .eq("user_id", uid)
+          .in("status", ["available", "active"])
 
-  const loadUserData = useCallback(async (uid: string) => {
-    try {
-      console.log("[v0] Loading user data for:", uid)
+        if (coins && coins.length > 0) {
+          const total = coins.reduce((sum, coin) => sum + Number(coin.amount), 0)
+          setBalance(total)
+          console.log("[v0] Balance loaded:", total)
+        } else {
+          console.log("[v0] No coins found, setting balance to 0")
+          setBalance(0.0)
+        }
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("rating, total_trades, referral_code, total_mined, mining_streak, next_mine_at")
-        .eq("id", uid)
-        .single()
+        const { data: transactionsData } = await supabase
+          .from("transactions")
+          .select("*")
+          .eq("user_id", uid)
+          .order("created_at", { ascending: false })
+          .limit(10)
 
-      if (profile) {
-        console.log("[v0] Profile loaded:", profile)
-        setUserRating(Number(profile.rating) || 0.0)
-        setUserTrades(Number(profile.total_trades) || 0)
-        setTotalMined(Number(profile.total_mined) || 0.0)
-        setMiningStreak(Number(profile.mining_streak) || 0)
-      } else {
-        console.log("[v0] No profile found, setting defaults")
+        if (transactionsData && transactionsData.length > 0) {
+          const formattedTransactions = transactionsData.map((tx, index) => ({
+            id: index + 1,
+            type: tx.type as "mine" | "trade" | "buy" | "sell" | "claim",
+            amount: Number(tx.amount),
+            time: new Date(tx.created_at).toLocaleString(),
+            status: tx.status as "completed" | "pending",
+          }))
+          setTransactions(formattedTransactions)
+          console.log("[v0] Transactions loaded:", formattedTransactions.length)
+        } else {
+          console.log("[v0] No transactions found")
+          setTransactions([])
+        }
+      } catch (error) {
+        console.error("[v0] Error loading user data:", error)
+        setBalance(0.0)
         setUserRating(0.0)
         setUserTrades(0)
-        setTotalMined(0.0)
-        setMiningStreak(0)
-      }
-
-      const { data: coins } = await supabase.from("coins").select("*").eq("user_id", uid)
-
-      const { data: trades } = await supabase.from("trades").select("*").or(`buyer_id.eq.${uid},seller_id.eq.${uid}`)
-
-      const { data: transactionsData } = await supabase
-        .from("transactions")
-        .select("*")
-        .eq("user_id", uid)
-        .order("created_at", { ascending: false })
-        .limit(10)
-
-      if (coins && coins.length > 0) {
-        const total = coins.reduce((sum, coin) => sum + Number(coin.amount), 0)
-        setBalance(total)
-        console.log("[v0] Balance loaded:", total)
-      } else {
-        console.log("[v0] No coins found, setting balance to 0")
-        setBalance(0.0)
-      }
-
-      if (transactionsData && transactionsData.length > 0) {
-        const formattedTransactions = transactionsData.map((tx, index) => ({
-          id: index + 1,
-          type: tx.type as "mine" | "trade" | "buy" | "sell" | "claim",
-          amount: Number(tx.amount),
-          time: new Date(tx.created_at).toLocaleString(),
-          status: tx.status as "completed" | "pending",
-        }))
-        setTransactions(formattedTransactions)
-        console.log("[v0] Transactions loaded:", formattedTransactions.length)
-      } else {
-        console.log("[v0] No transactions found")
         setTransactions([])
       }
-    } catch (error) {
-      console.error("[v0] Error loading user data:", error)
-      setBalance(0.0)
-      setUserRating(0.0)
-      setUserTrades(0)
-      setTransactions([])
-    }
-  }, [])
+    },
+    [supabase],
+  )
 
   const mine = useCallback(async () => {
     if (isMining || nextMineTime > 0 || !userId) {
@@ -233,7 +217,7 @@ export function MiningProvider({ children }: { children: React.ReactNode }) {
 
     console.log("[v0] Starting mining...")
     setIsMining(true)
-    const reward = 2.5 // Fixed reward of 2.50 GX
+    const reward = 2.5
 
     if (remainingSupply < reward) {
       alert("Mining halted: Maximum supply reached!")
@@ -291,20 +275,11 @@ export function MiningProvider({ children }: { children: React.ReactNode }) {
       }, 2000)
     } catch (error) {
       console.error("[v0] Mining error:", error)
+      alert("Mining failed. Please try again.")
       setPendingReward(0)
       setIsMining(false)
     }
-  }, [
-    isMining,
-    nextMineTime,
-    userId,
-    transactions.length,
-    totalMined,
-    miningStreak,
-    remainingSupply,
-    loadSupplyData,
-    loadUserData,
-  ])
+  }, [isMining, nextMineTime, userId, transactions.length, remainingSupply, loadSupplyData, loadUserData, supabase])
 
   const addTransaction = useCallback((transaction: Transaction) => {
     setTransactions((prev) => [transaction, ...prev])
@@ -443,7 +418,7 @@ export function MiningProvider({ children }: { children: React.ReactNode }) {
         console.error("[v0] Claim coins error:", error)
       }
     },
-    [balance, userId, transactions.length],
+    [balance, userId, transactions.length, supabase],
   )
 
   const rateSeller = useCallback(
@@ -483,8 +458,8 @@ export function MiningProvider({ children }: { children: React.ReactNode }) {
         activeTrades,
         claimedCoins,
         userId,
-        remainingSupply, // Added to context
-        totalSupply, // Added to context
+        remainingSupply,
+        totalSupply,
         mine,
         addTransaction,
         updateBalance,

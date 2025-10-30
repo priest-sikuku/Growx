@@ -9,6 +9,7 @@ export function DashboardStats() {
   const [balance, setBalance] = useState(0)
   const [availableBalance, setAvailableBalance] = useState(0)
   const [totalReferrals, setTotalReferrals] = useState(0)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -18,35 +19,63 @@ export function DashboardStats() {
       } = await supabase.auth.getUser()
 
       if (user) {
-        // Fetch balance from profiles
-        const { data: profile } = await supabase.from("profiles").select("total_mined").eq("id", user.id).single()
+        const { data: coins } = await supabase
+          .from("coins")
+          .select("amount")
+          .eq("user_id", user.id)
+          .in("status", ["available", "active"])
 
-        if (profile) {
-          setBalance(Number(profile.total_mined) || 0)
+        if (coins && coins.length > 0) {
+          const totalBalance = coins.reduce((sum, coin) => sum + Number(coin.amount), 0)
+          setBalance(totalBalance)
+        } else {
+          setBalance(0)
         }
 
-        const { data: availBal } = await supabase.rpc("get_available_balance", { p_user_id: user.id })
-        if (availBal !== null) {
-          setAvailableBalance(Number(availBal) || 0)
+        const { data: availBal, error: balError } = await supabase.rpc("get_available_balance", {
+          p_user_id: user.id,
+        })
+
+        if (!balError && availBal !== null) {
+          setAvailableBalance(Number(availBal))
+        } else {
+          // Fallback to total balance if RPC fails
+          setAvailableBalance(balance)
         }
 
-        // Fetch referrals count
-        const { data: referrals } = await supabase
+        const { data: referrals, error: refError } = await supabase
           .from("referrals")
           .select("id", { count: "exact" })
           .eq("referrer_id", user.id)
+          .eq("status", "active")
 
-        if (referrals) {
+        if (!refError && referrals) {
           setTotalReferrals(referrals.length)
         }
       }
+      setLoading(false)
     }
 
     fetchStats()
-    // Refresh every 5 seconds
-    const interval = setInterval(fetchStats, 5000)
+    const interval = setInterval(fetchStats, 3000)
     return () => clearInterval(interval)
   }, [])
+
+  if (loading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="glass-card p-6 rounded-2xl border border-white/5 animate-pulse">
+          <div className="h-20 bg-white/5 rounded"></div>
+        </div>
+        <div className="glass-card p-6 rounded-2xl border border-white/5 animate-pulse">
+          <div className="h-20 bg-white/5 rounded"></div>
+        </div>
+        <div className="glass-card p-6 rounded-2xl border border-white/5 animate-pulse">
+          <div className="h-20 bg-white/5 rounded"></div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -81,7 +110,7 @@ export function DashboardStats() {
             <Users className="w-6 h-6 text-blue-400" />
           </div>
         </div>
-        <div className="text-xs text-blue-400">Earn from referrals</div>
+        <div className="text-xs text-blue-400">Earn 2% commission</div>
       </div>
     </div>
   )
