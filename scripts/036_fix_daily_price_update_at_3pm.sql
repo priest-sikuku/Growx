@@ -11,8 +11,13 @@ CREATE OR REPLACE FUNCTION update_daily_reference_price()
 RETURNS TABLE(success BOOLEAN, message TEXT, new_price DECIMAL, old_price DECIMAL) AS $$
 DECLARE
   today_date DATE := CURRENT_DATE;
-  -- Fixed syntax for creating timestamp with timezone
-  today_3pm TIMESTAMPTZ := (CURRENT_DATE::TEXT || ' 15:00:00')::TIMESTAMP AT TIME ZONE 'Africa/Nairobi';
+  -- Fixed timestamp creation using make_timestamptz function
+  today_3pm TIMESTAMPTZ := make_timestamptz(
+    EXTRACT(YEAR FROM CURRENT_DATE)::INT,
+    EXTRACT(MONTH FROM CURRENT_DATE)::INT,
+    EXTRACT(DAY FROM CURRENT_DATE)::INT,
+    15, 0, 0, 'Africa/Nairobi'
+  );
   calculated_new_price DECIMAL;
   current_prev_price DECIMAL;
   existing_ref RECORD;
@@ -175,8 +180,13 @@ BEGIN
       prev_price := current_price;
       current_price := ROUND(current_price * 1.03, 2);
       
-      -- Fixed timestamp creation
-      ref_time := (current_date::TEXT || ' 15:00:00')::TIMESTAMP AT TIME ZONE 'Africa/Nairobi';
+      -- Fixed timestamp creation using make_timestamptz
+      ref_time := make_timestamptz(
+        EXTRACT(YEAR FROM current_date)::INT,
+        EXTRACT(MONTH FROM current_date)::INT,
+        EXTRACT(DAY FROM current_date)::INT,
+        15, 0, 0, 'Africa/Nairobi'
+      );
       
       INSERT INTO gx_price_references (reference_date, reference_time, price, previous_price)
       VALUES (current_date, ref_time, current_price, prev_price);

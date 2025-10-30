@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react"
 import { ArrowLeft, User, Clock, Star } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import Header from "@/components/header"
 import Footer from "@/components/footer"
 import { createClient } from "@/lib/supabase/client"
@@ -34,6 +36,7 @@ export default function SellGXPage() {
   const [loading, setLoading] = useState(true)
   const [initiatingTrade, setInitiatingTrade] = useState<string | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [tradeAmounts, setTradeAmounts] = useState<{ [key: string]: string }>({})
   const router = useRouter()
   const supabase = createClient()
 
@@ -97,10 +100,26 @@ export default function SellGXPage() {
         return
       }
 
+      const customAmount = Number.parseFloat(tradeAmounts[ad.id] || "0")
+      const tradeAmount = customAmount > 0 ? customAmount : ad.min_amount
+      const availableAmount = ad.remaining_amount || ad.gx_amount
+
+      if (tradeAmount < 2) {
+        alert("Minimum trade amount is 2 GX")
+        setInitiatingTrade(null)
+        return
+      }
+
+      if (tradeAmount > availableAmount) {
+        alert(`Maximum available amount is ${availableAmount} GX`)
+        setInitiatingTrade(null)
+        return
+      }
+
       const { data: tradeId, error } = await supabase.rpc("initiate_p2p_trade_v2", {
         p_ad_id: ad.id,
         p_buyer_id: user.id,
-        p_gx_amount: ad.min_amount, // Start with minimum amount
+        p_gx_amount: tradeAmount,
       })
 
       if (error) {
@@ -241,7 +260,25 @@ export default function SellGXPage() {
                         </div>
                       </div>
 
-                      <div>
+                      <div className="flex flex-col gap-3">
+                        {currentUserId !== ad.user_id && (
+                          <div className="space-y-2">
+                            <Label htmlFor={`amount-${ad.id}`} className="text-sm text-gray-400">
+                              Amount to sell (GX)
+                            </Label>
+                            <Input
+                              id={`amount-${ad.id}`}
+                              type="number"
+                              min="2"
+                              max={ad.remaining_amount || ad.gx_amount}
+                              step="0.01"
+                              placeholder={`Min: 2, Max: ${ad.remaining_amount || ad.gx_amount}`}
+                              value={tradeAmounts[ad.id] || ""}
+                              onChange={(e) => setTradeAmounts((prev) => ({ ...prev, [ad.id]: e.target.value }))}
+                              className="bg-white/5 border-white/10 text-white"
+                            />
+                          </div>
+                        )}
                         <Button
                           className="px-6 py-3 rounded-lg bg-gradient-to-r from-red-600 to-red-700 text-white font-semibold hover:shadow-lg hover:shadow-red-500/50 transition"
                           onClick={() => initiateTrade(ad)}
