@@ -1,6 +1,9 @@
 export function FeatureGrid() {
   const features = [
-  
+    {
+      title: "Auto Growth",
+      description: "Compounds 3% daily to grow holders' balances.",
+    },
     {
       title: "2‑Hour Mining",
       description: "Open mining cycles keep the network active and fair.",
