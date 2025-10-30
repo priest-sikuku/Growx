@@ -24,21 +24,15 @@ interface Trade {
   coins_released_at: string | null
   expires_at: string
   created_at: string
-  buyer: {
-    username: string | null
-    email: string | null
-  }
-  seller: {
-    username: string | null
-    email: string | null
-  }
-  ad: {
-    account_number: string | null
-    mpesa_number: string | null
-    paybill_number: string | null
-    airtel_money: string | null
-    terms_of_trade: string | null
-  }
+  buyer_username?: string | null
+  buyer_email?: string | null
+  seller_username?: string | null
+  seller_email?: string | null
+  ad_account_number?: string | null
+  ad_mpesa_number?: string | null
+  ad_paybill_number?: string | null
+  ad_airtel_money?: string | null
+  ad_terms_of_trade?: string | null
 }
 
 interface Message {
@@ -96,23 +90,59 @@ export default function TradePage() {
 
   async function fetchTrade() {
     try {
-      const { data, error } = await supabase
+      const { data: tradeData, error: tradeError } = await supabase
         .from("p2p_trades")
-        .select(`
-          *,
-          buyer:buyer_id (username, email),
-          seller:seller_id (username, email),
-          ad:ad_id (account_number, mpesa_number, paybill_number, airtel_money, terms_of_trade)
-        `)
+        .select("*")
         .eq("id", params.id)
         .single()
 
-      if (error) {
-        console.error("[v0] Error fetching trade:", error)
+      if (tradeError) {
+        console.error("[v0] Error fetching trade:", tradeError)
+        setLoading(false)
         return
       }
 
-      setTrade(data)
+      if (!tradeData) {
+        setLoading(false)
+        return
+      }
+
+      // Fetch buyer profile
+      const { data: buyerData } = await supabase
+        .from("profiles")
+        .select("username, email")
+        .eq("id", tradeData.buyer_id)
+        .single()
+
+      // Fetch seller profile
+      const { data: sellerData } = await supabase
+        .from("profiles")
+        .select("username, email")
+        .eq("id", tradeData.seller_id)
+        .single()
+
+      // Fetch ad details
+      const { data: adData } = await supabase
+        .from("p2p_ads")
+        .select("account_number, mpesa_number, paybill_number, airtel_money, terms_of_trade")
+        .eq("id", tradeData.ad_id)
+        .single()
+
+      // Combine all data
+      const combinedTrade: Trade = {
+        ...tradeData,
+        buyer_username: buyerData?.username || null,
+        buyer_email: buyerData?.email || null,
+        seller_username: sellerData?.username || null,
+        seller_email: sellerData?.email || null,
+        ad_account_number: adData?.account_number || null,
+        ad_mpesa_number: adData?.mpesa_number || null,
+        ad_paybill_number: adData?.paybill_number || null,
+        ad_airtel_money: adData?.airtel_money || null,
+        ad_terms_of_trade: adData?.terms_of_trade || null,
+      }
+
+      setTrade(combinedTrade)
     } catch (error) {
       console.error("[v0] Error:", error)
     } finally {
@@ -333,12 +363,12 @@ export default function TradePage() {
   }
 
   function getPaymentMethods() {
-    if (!trade?.ad) return "Not specified"
+    if (!trade) return ["Not specified"]
     const methods = []
-    if (trade.ad.mpesa_number) methods.push(`M-Pesa: ${trade.ad.mpesa_number}`)
-    if (trade.ad.paybill_number) methods.push(`Paybill: ${trade.ad.paybill_number}`)
-    if (trade.ad.airtel_money) methods.push(`Airtel: ${trade.ad.airtel_money}`)
-    if (trade.ad.account_number) methods.push(`Account: ${trade.ad.account_number}`)
+    if (trade.ad_mpesa_number) methods.push(`M-Pesa: ${trade.ad_mpesa_number}`)
+    if (trade.ad_paybill_number) methods.push(`Paybill: ${trade.ad_paybill_number}`)
+    if (trade.ad_airtel_money) methods.push(`Airtel: ${trade.ad_airtel_money}`)
+    if (trade.ad_account_number) methods.push(`Account: ${trade.ad_account_number}`)
     return methods.length > 0 ? methods : ["Not specified"]
   }
 
@@ -413,7 +443,7 @@ export default function TradePage() {
                   <p className="text-sm text-gray-400 mb-1">Buyer</p>
                   <div className="flex items-center gap-2 p-3 bg-white/5 rounded-lg">
                     <User size={16} className="text-green-400" />
-                    <p className="font-semibold">{trade.buyer?.username || trade.buyer?.email || "Anonymous"}</p>
+                    <p className="font-semibold">{trade.buyer_username || trade.buyer_email || "Anonymous"}</p>
                     {isBuyer && <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded">You</span>}
                   </div>
                 </div>
@@ -421,7 +451,7 @@ export default function TradePage() {
                   <p className="text-sm text-gray-400 mb-1">Seller</p>
                   <div className="flex items-center gap-2 p-3 bg-white/5 rounded-lg">
                     <User size={16} className="text-red-400" />
-                    <p className="font-semibold">{trade.seller?.username || trade.seller?.email || "Anonymous"}</p>
+                    <p className="font-semibold">{trade.seller_username || trade.seller_email || "Anonymous"}</p>
                     {isSeller && <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded">You</span>}
                   </div>
                 </div>
@@ -451,10 +481,10 @@ export default function TradePage() {
                 </p>
               ))}
             </div>
-            {trade.ad?.terms_of_trade && (
+            {trade.ad_terms_of_trade && (
               <div className="mt-4">
                 <p className="text-sm text-gray-400 mb-2">Terms of Trade</p>
-                <p className="text-sm p-3 bg-white/5 rounded-lg">{trade.ad.terms_of_trade}</p>
+                <p className="text-sm p-3 bg-white/5 rounded-lg">{trade.ad_terms_of_trade}</p>
               </div>
             )}
           </div>
