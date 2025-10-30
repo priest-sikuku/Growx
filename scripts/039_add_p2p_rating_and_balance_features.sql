@@ -61,8 +61,11 @@ CREATE TRIGGER trigger_update_user_rating
   FOR EACH ROW
   EXECUTE FUNCTION update_user_rating();
 
+-- Drop existing function first to avoid parameter name conflicts
+DROP FUNCTION IF EXISTS get_available_balance(UUID);
+
 -- Function to get available balance (total_mined - locked in active sell ads)
-CREATE OR REPLACE FUNCTION get_available_balance(user_id UUID)
+CREATE FUNCTION get_available_balance(user_id UUID)
 RETURNS NUMERIC AS $$
 DECLARE
   total_balance NUMERIC;
@@ -76,7 +79,7 @@ BEGIN
   -- Get locked balance from active sell ads
   SELECT COALESCE(SUM(remaining_amount), 0) INTO locked_balance
   FROM p2p_ads
-  WHERE user_id = user_id
+  WHERE user_id = get_available_balance.user_id
   AND ad_type = 'sell'
   AND status = 'active'
   AND expires_at > NOW();

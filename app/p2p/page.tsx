@@ -11,6 +11,7 @@ import { createClient } from "@/lib/supabase/client"
 export default function P2PMarket() {
   const router = useRouter()
   const [availableBalance, setAvailableBalance] = useState<number | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     fetchAvailableBalance()
@@ -24,13 +25,26 @@ export default function P2PMarket() {
       data: { user },
     } = await supabase.auth.getUser()
 
-    if (!user) return
+    if (!user) {
+      setIsLoading(false)
+      return
+    }
 
     const { data, error } = await supabase.rpc("get_available_balance", { user_id: user.id })
 
-    if (!error && data !== null) {
+    if (error) {
+      console.error("[v0] Error fetching available balance:", error)
+      // Fallback: fetch total_mined from profiles
+      const { data: profileData } = await supabase.from("profiles").select("total_mined").eq("id", user.id).single()
+
+      if (profileData) {
+        setAvailableBalance(profileData.total_mined || 0)
+      }
+    } else if (data !== null) {
       setAvailableBalance(data)
     }
+
+    setIsLoading(false)
   }
 
   return (
@@ -47,21 +61,21 @@ export default function P2PMarket() {
           </div>
 
           <div className="glass-card border border-white/10 rounded-xl p-8">
-            <div className="flex justify-between items-center mb-6">
-              {/* Available Balance - Small button on the left */}
-              {availableBalance !== null && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-2 bg-green-500/10 border-green-500/30 hover:bg-green-500/20 transition text-green-400"
-                >
-                  <Wallet size={16} />
-                  <span className="font-semibold">{availableBalance.toFixed(2)} GX</span>
-                  <span className="text-xs opacity-70">Available</span>
-                </Button>
-              )}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+              {/* Available Balance - More prominent display */}
+              <div className="glass-card border border-green-500/30 rounded-lg px-4 py-3 bg-green-500/10">
+                <div className="flex items-center gap-3">
+                  <Wallet size={20} className="text-green-400" />
+                  <div>
+                    <p className="text-xs text-gray-400 mb-0.5">Available Balance</p>
+                    <p className="text-xl font-bold text-green-400">
+                      {isLoading ? "..." : availableBalance !== null ? `${availableBalance.toFixed(2)} GX` : "0.00 GX"}
+                    </p>
+                  </div>
+                </div>
+              </div>
 
-              {/* My Ads and My Trades buttons on the right */}
+              {/* My Ads and My Trades buttons */}
               <div className="flex gap-2">
                 <Button
                   variant="outline"
