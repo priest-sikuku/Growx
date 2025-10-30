@@ -352,25 +352,25 @@ export default function P2PMarket() {
                           <div className="flex flex-wrap gap-2">
                             {ad.mpesa_number && (
                               <div className="flex items-center gap-1.5 bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
-                                <div className="w-2 h-2 rounded-full bg-[#0ecb81]" />
+                                <div className="w-2 h-2 rounded-full bg-green-500" />
                                 <span className="text-xs text-gray-300">M-Pesa</span>
                               </div>
                             )}
                             {ad.paybill_number && (
                               <div className="flex items-center gap-1.5 bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
-                                <div className="w-2 h-2 rounded-full bg-[#0ecb81]" />
+                                <div className="w-2 h-2 rounded-full bg-yellow-500" />
                                 <span className="text-xs text-gray-300">Paybill</span>
                               </div>
                             )}
                             {ad.airtel_money && (
                               <div className="flex items-center gap-1.5 bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
-                                <div className="w-2 h-2 rounded-full bg-[#0ecb81]" />
+                                <div className="w-2 h-2 rounded-full bg-red-500" />
                                 <span className="text-xs text-gray-300">Airtel Money</span>
                               </div>
                             )}
                             {ad.account_number && (
                               <div className="flex items-center gap-1.5 bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
-                                <div className="w-2 h-2 rounded-full bg-[#0ecb81]" />
+                                <div className="w-2 h-2 rounded-full bg-blue-500" />
                                 <span className="text-xs text-gray-300">Bank</span>
                               </div>
                             )}
