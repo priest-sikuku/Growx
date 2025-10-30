@@ -228,18 +228,25 @@ export function MiningProvider({ children }: { children: React.ReactNode }) {
     setPendingReward(reward)
 
     try {
+      console.log("[v0] Calling process_mining_claim RPC...")
       const { data: claimResult, error: claimError } = await supabase.rpc("process_mining_claim", {
         p_user_id: userId,
         p_reward_amount: reward,
       })
 
+      console.log("[v0] RPC Response:", { claimResult, claimError })
+
       if (claimError) {
         console.error("[v0] Mining claim error:", claimError)
-        throw claimError
+        alert(`Mining failed: ${claimError.message}`)
+        setIsMining(false)
+        setPendingReward(0)
+        return
       }
 
       if (claimResult && claimResult.length > 0) {
         const result = claimResult[0]
+        console.log("[v0] Mining result:", result)
 
         if (!result.success) {
           alert(result.message)
@@ -271,6 +278,9 @@ export function MiningProvider({ children }: { children: React.ReactNode }) {
         await loadUserData(userId)
 
         console.log("[v0] Mining completed! Reward:", reward)
+      } else {
+        console.error("[v0] No result returned from RPC")
+        alert("Mining failed: No response from server")
       }
 
       setTimeout(() => {
@@ -279,7 +289,7 @@ export function MiningProvider({ children }: { children: React.ReactNode }) {
       }, 2000)
     } catch (error) {
       console.error("[v0] Mining error:", error)
-      alert("Mining failed. Please try again.")
+      alert(`Mining failed: ${error instanceof Error ? error.message : "Unknown error"}`)
       setPendingReward(0)
       setIsMining(false)
     }
