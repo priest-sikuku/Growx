@@ -244,61 +244,46 @@ export function MiningProvider({ children }: { children: React.ReactNode }) {
     setPendingReward(reward)
 
     try {
-      console.log("[v0] Calling process_mining_claim with:", { userId, reward })
-
       const { data: claimResult, error: claimError } = await supabase.rpc("process_mining_claim", {
         p_user_id: userId,
         p_reward_amount: reward,
       })
 
-      console.log("[v0] RPC Response:", { claimResult, claimError })
-
       if (claimError) {
         console.error("[v0] Mining claim error:", claimError)
-        alert(`Mining failed: ${claimError.message}`)
-        setIsMining(false)
-        setPendingReward(0)
-        return
+        throw claimError
       }
 
-      if (!claimResult || claimResult.length === 0) {
-        console.error("[v0] No result returned from mining claim")
-        alert("Mining failed: No response from server. Please try again.")
-        setIsMining(false)
-        setPendingReward(0)
-        return
+      if (claimResult && claimResult.length > 0) {
+        const result = claimResult[0]
+
+        if (!result.success) {
+          alert(result.message)
+          setIsMining(false)
+          setPendingReward(0)
+          return
+        }
+
+        console.log("[v0] Mining successful:", result.message)
+
+        setNextMineTime(10800) // 3 hours in seconds
+        setBalance((prev) => prev + reward)
+        setTotalMined((prev) => prev + reward)
+        setMiningStreak((prev) => prev + 1)
+
+        addTransaction({
+          id: transactions.length + 1,
+          type: "mine",
+          amount: reward,
+          time: "just now",
+          status: "completed",
+        })
+
+        await loadSupplyData()
+        await loadUserData(userId)
+
+        console.log("[v0] Mining completed! Reward:", reward)
       }
-
-      const result = claimResult[0]
-      console.log("[v0] Mining result:", result)
-
-      if (!result.success) {
-        console.log("[v0] Mining not allowed:", result.message)
-        alert(result.message)
-        setIsMining(false)
-        setPendingReward(0)
-        return
-      }
-
-      console.log("[v0] Mining successful:", result.message)
-
-      setNextMineTime(10800) // 3 hours in seconds
-      setBalance((prev) => prev + reward)
-      setTotalMined((prev) => prev + reward)
-      setMiningStreak((prev) => prev + 1)
-
-      addTransaction({
-        id: transactions.length + 1,
-        type: "mine",
-        amount: reward,
-        time: "just now",
-        status: "completed",
-      })
-
-      await loadSupplyData()
-      await loadUserData(userId)
-
-      console.log("[v0] Mining completed! Reward:", reward)
 
       setTimeout(() => {
         setPendingReward(0)
@@ -306,7 +291,6 @@ export function MiningProvider({ children }: { children: React.ReactNode }) {
       }, 2000)
     } catch (error) {
       console.error("[v0] Mining error:", error)
-      alert(`Mining failed: ${error instanceof Error ? error.message : "Unknown error"}`)
       setPendingReward(0)
       setIsMining(false)
     }

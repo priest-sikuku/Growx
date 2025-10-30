@@ -88,19 +88,23 @@ export default function SignUp() {
     }
 
     try {
+      let referrerId = null
       if (formData.referralCode) {
         const { data: referrerData, error: referrerError } = await supabase
           .from("profiles")
-          .select("id, referral_code")
-          .eq("referral_code", formData.referralCode.toUpperCase())
+          .select("id")
+          .eq("referral_code", formData.referralCode)
           .single()
 
         if (referrerError || !referrerData) {
-          setError("Invalid referral code. Please check and try again.")
+          setError("Invalid referral code")
           setLoading(false)
           return
         }
+        referrerId = referrerData.id
       }
+
+      const referralCode = `GX_${formData.username.toUpperCase()}_${Math.random().toString(36).substring(2, 8).toUpperCase()}`
 
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: formData.email,
@@ -109,7 +113,7 @@ export default function SignUp() {
           emailRedirectTo: process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${window.location.origin}/dashboard`,
           data: {
             username: formData.username,
-            referral_code_used: formData.referralCode.toUpperCase() || null,
+            referral_code: referralCode,
           },
         },
       })
@@ -117,24 +121,32 @@ export default function SignUp() {
       if (signUpError) throw signUpError
 
       if (data?.user) {
-        const { error: referralError } = await supabase.rpc("handle_new_user_referral", {
-          p_user_id: data.user.id,
-          p_referral_code: formData.referralCode.toUpperCase() || null,
-        })
-
-        if (referralError) {
-          console.error("[v0] Referral setup error:", referralError)
-        }
-
         const { error: profileError } = await supabase
           .from("profiles")
           .update({
             username: formData.username,
+            referral_code: referralCode,
+            referred_by: referrerId,
           })
           .eq("id", data.user.id)
 
-        if (profileError) {
-          console.error("[v0] Profile update error:", profileError)
+        if (profileError) throw profileError
+
+        if (referrerId) {
+          const { error: referralError } = await supabase.from("referrals").insert({
+            referrer_id: referrerId,
+            referred_id: data.user.id,
+            referral_code: formData.referralCode,
+            status: "active",
+            total_trading_commission: 0,
+            total_claim_commission: 0,
+          })
+
+          if (referralError) {
+            console.error("[v0] Referral creation error:", referralError)
+          } else {
+            console.log("[v0] Referral relationship created successfully")
+          }
         }
 
         router.push("/auth/sign-up-success")
@@ -147,7 +159,7 @@ export default function SignUp() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-black">
+    <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1 flex items-center justify-center py-12 px-4">
         <div className="glass-card p-8 rounded-2xl border border-white/5 w-full max-w-md">
@@ -240,12 +252,11 @@ export default function SignUp() {
                 name="referralCode"
                 value={formData.referralCode}
                 onChange={handleChange}
-                placeholder="Enter 6-character code"
-                maxLength={6}
-                className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-green-500/50 transition uppercase"
+                placeholder="Enter referral code"
+                className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-green-500/50 transition"
               />
-              <p className="text-xs text-green-400 mt-1">
-                Your referrer earns 2% commission on all your transactions for life!
+              <p className="text-xs text-gray-500 mt-1">
+                Get 2% trading commission + 1% claim commission from your referrals
               </p>
             </div>
 
